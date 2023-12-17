@@ -2,7 +2,7 @@
 using AutoMapper;
 using BookStore.API.Tests.Helpers;
 
-namespace BookStore.API.Tests
+namespace BookStore.API.Tests.Mappers
 {
     public abstract class ProfileTestsBase<TProfile1, TProfile2>
       where TProfile1 : Profile, new()

@@ -1,15 +1,15 @@
 ﻿using AutoFixture;
-using BookStore.API.Configuration;
+using BookStore.API.Configuration.Mappers;
 using BookStore.API.Dtos.Category;
 using BookStore.Domain.Models;
 using FluentAssertions;
 using Xunit;
 
-namespace BookStore.API.Tests
+namespace BookStore.API.Tests.Mappers
 {
     public class CategoryProfileTests
     {
-        public abstract class CategoryProfileTestsBase : ProfileTestsBase<AutomapperConfig>
+        public abstract class CategoryProfileTestsBase : ProfileTestsBase<CategoryProfile>
         {
         }
 
