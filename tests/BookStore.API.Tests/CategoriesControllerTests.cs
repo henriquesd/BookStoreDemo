@@ -2,6 +2,7 @@
 using AutoMapper;
 using BookStore.API.Controllers;
 using BookStore.API.Dtos.Category;
+using BookStore.API.Tests.Helpers;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using FluentAssertions;
@@ -22,10 +23,7 @@ namespace BookStore.API.Tests
 
             protected CategoriesControllerTestsBase()
             {
-                _fixture = new Fixture();
-                _fixture.Behaviors.Remove(new ThrowingRecursionBehavior());
-                _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
-
+                _fixture = FixtureFactory.Create();
                 _categoryServiceMock = new Mock<ICategoryService>();
                 _mapperMock = new Mock<IMapper>();
                 _categoriesController = new CategoriesController(_mapperMock.Object, _categoryServiceMock.Object);
@@ -330,7 +328,7 @@ namespace BookStore.API.Tests
                 // Arrange
                 var category = _fixture.Create<Category>();
 
-                _categoryServiceMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
+                _categoryServiceMock.Setup(c => c.GetById(category.Id)                ).ReturnsAsync(category);
                 _categoryServiceMock.Setup(c => c.Remove(category)).ReturnsAsync(false);
 
                 // Act
