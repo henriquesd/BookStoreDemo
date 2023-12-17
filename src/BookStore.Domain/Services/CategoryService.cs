@@ -36,13 +36,14 @@ namespace BookStore.Domain.Services
             return category;
         }
 
-        public async Task<Category> Update(Category category)
+        public async Task<IOperationResult<Category>> Update(Category category)
         {
             if (_categoryRepository.Search(c => c.Name == category.Name && c.Id != category.Id).Result.Any())
-                return null;
+                return new OperationResult<Category>(category) { Success = false, Message = "This category name is already being used" };
 
             await _categoryRepository.Update(category);
-            return category;
+
+            return new OperationResult<Category>(category);
         }
 
         public async Task<bool> Remove(Category category)

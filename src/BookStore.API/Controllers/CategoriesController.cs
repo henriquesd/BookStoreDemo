@@ -64,12 +64,15 @@ namespace BookStore.API.Controllers
         public async Task<IActionResult> Update(int id, CategoryEditDto categoryDto)
         {
             if (id != categoryDto.Id) return BadRequest();
-
             if (!ModelState.IsValid) return BadRequest();
 
-            await _categoryService.Update(_mapper.Map<Category>(categoryDto));
+            var category = _mapper.Map<Category>(categoryDto);
+            
+            var result = await _categoryService.Update(category);
 
-            return Ok(categoryDto);
+            if (!result.Success) return BadRequest(result);
+
+            return Ok(result);
         }
 
         [HttpDelete("{id:int}")]

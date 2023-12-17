@@ -225,7 +225,9 @@ namespace BookStore.Domain.Tests
 
                 // Assert
                 result.Should().NotBeNull();
-                result.Should().BeOfType<Category>();
+                result.Success.Should().BeTrue();
+                result.Payload.Should().NotBeNull();
+                result.Should().BeOfType<OperationResult<Category>>();
             }
 
             [Fact]
@@ -250,7 +252,9 @@ namespace BookStore.Domain.Tests
                 var result = await _categoryService.Update(category);
 
                 // Assert
-                result.Should().BeNull();
+                result.Should().NotBeNull();
+                result.Success.Should().BeFalse();
+                result.Payload.Should().NotBeNull();
             }
 
             [Fact]
