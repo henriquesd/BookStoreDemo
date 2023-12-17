@@ -380,18 +380,12 @@ namespace BookStore.API.Tests
             public async void ShouldReturnNotFound_WhenCategoryWithSearchedNameDoesNotExist()
             {
                 // Arrange
-                var category = _fixture.Create<Category>();
-                var categoryList = _fixture.CreateMany<Category>();
+                var categoryName = _fixture.Create<string>();
 
-                var categoryResultDto = _fixture.Create<CategoryResultDto>();
-                category.Name = categoryResultDto.Name;
-
-                _categoryServiceMock.Setup(c => c.Search(category.Name))
-                    .ReturnsAsync(categoryList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<Category>>(It.IsAny<Category>())).Returns(categoryList);
+                _categoryServiceMock.Setup(c => c.Search(categoryName)).ReturnsAsync(new List<Category>());
 
                 // Act
-                var result = await _categoriesController.Search(category.Name);
+                var result = await _categoriesController.Search(categoryName);
                 var actual = (NotFoundObjectResult)result.Result;
 
                 // Assert

@@ -25,7 +25,9 @@ namespace BookStore.API.Controllers
         {
             var categories = await _categoryService.GetAll();
 
-            return Ok(_mapper.Map<IEnumerable<CategoryResultDto>>(categories));
+            var categoryResultDtoList = _mapper.Map<IEnumerable<CategoryResultDto>>(categories);
+
+            return Ok(categoryResultDtoList);
         }
 
         [HttpGet("{id:int}")]
@@ -37,7 +39,9 @@ namespace BookStore.API.Controllers
 
             if (category == null) return NotFound();
 
-            return Ok(_mapper.Map<CategoryResultDto>(category));
+            var categoryResultDto = _mapper.Map<CategoryResultDto>(category);
+
+            return Ok(categoryResultDto);
         }
 
         [HttpPost]
@@ -52,7 +56,9 @@ namespace BookStore.API.Controllers
 
             if (categoryResult == null) return BadRequest();
 
-            return Ok(_mapper.Map<CategoryResultDto>(categoryResult));
+            var categoryResultDto = _mapper.Map<CategoryResultDto>(categoryResult);
+
+            return Ok(categoryResultDto);
         }
 
         [HttpPut("{id:int}")]
@@ -93,9 +99,9 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<List<Category>>> Search(string category)
         {
-            var categories = _mapper.Map<List<Category>>(await _categoryService.Search(category));
+            var categories = await _categoryService.Search(category);
 
-            if (categories == null || categories.Count == 0)
+            if (categories == null || !categories.Any())
                 return NotFound("None category was founded");
 
             return Ok(categories);
