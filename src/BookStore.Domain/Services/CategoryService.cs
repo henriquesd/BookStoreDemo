@@ -22,9 +22,7 @@ namespace BookStore.Domain.Services
 
         public async Task<PagedResponse<Category>> GetAllWithPagination(int pageNumber, int pageSize)
         {
-            var categories = await _categoryRepository.GetAllWithPagination(pageNumber, pageSize);
-
-            return categories;
+            return await _categoryRepository.GetAllWithPagination(pageNumber, pageSize);
         }
 
         public async Task<Category> GetById(int id)

@@ -29,7 +29,14 @@ namespace BookStore.Infrastructure.Context
                 categories.Add(new Category { Id = i, Name = $"Category {i}" });
             }
 
+            var books = new List<Book>();
+            for (int i = 1; i <= 110; i++)
+            {
+                books.Add(new Book { Id = i, Name = $"Book {i}", CategoryId = 1, Author = $"Author {i}", Description = $"Test {i}" });
+            }
+
             modelBuilder.Entity<Category>().HasData(categories);
+            modelBuilder.Entity<Book>().HasData(books);
 
             base.OnModelCreating(modelBuilder);
         }

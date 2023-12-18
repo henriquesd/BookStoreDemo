@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using BookStore.Domain.Models;
+﻿using BookStore.Domain.Models;
+using static BookStore.Domain.Models.Pagination;
 
 namespace BookStore.Domain.Interfaces
 {
     public interface IBookService : IDisposable
     {
         Task<IEnumerable<Book>> GetAll();
+        Task<PagedResponse<Book>> GetAllWithPagination(int pageNumber, int pageSize);
         Task<Book> GetById(int id);
         Task<Book> Add(Book book);
         Task<Book> Update(Book book);

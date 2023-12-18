@@ -7,6 +7,7 @@ using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using static BookStore.API.Dtos.PaginationDto;
 
 namespace BookStore.API.Controllers
 {
@@ -30,6 +31,17 @@ namespace BookStore.API.Controllers
             var books = await _bookService.GetAll();
 
             return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
+        }
+
+        [HttpGet("GetAllWithPagination")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
+        {
+            var paginatedBooks = await _bookService.GetAllWithPagination(pageNumber, pageSize);
+
+            var booksResultDto = _mapper.Map<PagedResponseDto<BookResultDto>>(paginatedBooks);
+
+            return Ok(booksResultDto);
         }
 
         [HttpGet("{id:int}")]
