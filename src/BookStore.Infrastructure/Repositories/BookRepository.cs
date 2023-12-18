@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using BookStore.Domain.Interfaces;
+﻿using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using BookStore.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
