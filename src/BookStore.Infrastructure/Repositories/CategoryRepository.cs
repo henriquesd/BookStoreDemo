@@ -19,16 +19,9 @@ namespace BookStore.Infrastructure.Repositories
                 .Take(pageSize)
                 .ToListAsync();
 
-            var totalPages = (int)Math.Ceiling((decimal)totalItems / (decimal)pageSize);
+            var pagedResponse = new PagedResponse<Category>(categories, pageNumber, totalItems, pageSize);
 
-            return new PagedResponse<Category>
-            {
-                Data = categories,
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                TotalPages = totalPages,
-                TotalRecords = totalItems
-            };
+            return pagedResponse;
         }
     }
 }
