@@ -99,8 +99,7 @@ namespace BookStore.API.Controllers
         {
             var categories = await _categoryService.Search(category);
 
-            if (categories == null || !categories.Any())
-                return NotFound("None category was founded");
+            if (!categories.Any()) return NotFound("None category was founded");
 
             return Ok(categories);
         }
