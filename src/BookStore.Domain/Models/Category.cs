@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace BookStore.Domain.Models
+﻿namespace BookStore.Domain.Models
 {
     public class Category : Entity
     {

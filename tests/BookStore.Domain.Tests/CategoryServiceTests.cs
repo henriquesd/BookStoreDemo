@@ -1,6 +1,8 @@
-﻿using BookStore.Domain.Interfaces;
+﻿using AutoFixture;
+using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using BookStore.Domain.Services;
+using BookStore.Domain.Tests.Helpers;
 using FluentAssertions;
 using Moq;
 using Xunit;
@@ -11,46 +13,17 @@ namespace BookStore.Domain.Tests
     {
         public abstract class CategoryServiceTestsBase
         {
+            protected readonly Fixture _fixture;
             protected readonly Mock<ICategoryRepository> _categoryRepositoryMock;
             protected readonly Mock<IBookService> _bookService;
             protected readonly CategoryService _categoryService;
 
             protected CategoryServiceTestsBase()
             {
+                _fixture = FixtureFactory.Create();
                 _categoryRepositoryMock = new Mock<ICategoryRepository>();
                 _bookService = new Mock<IBookService>();
                 _categoryService = new CategoryService(_categoryRepositoryMock.Object, _bookService.Object);
-            }
-
-            protected Category CreateCategory()
-            {
-                return new Category()
-                {
-                    Id = 1,
-                    Name = "Category Name 1"
-                };
-            }
-
-            protected List<Category> CreateCategoryList()
-            {
-                return new List<Category>()
-                {
-                    new Category()
-                    {
-                        Id = 1,
-                        Name = "Category Name 1"
-                    },
-                    new Category()
-                    {
-                        Id = 2,
-                        Name = "Category Name 2"
-                    },
-                    new Category()
-                    {
-                        Id = 3,
-                        Name = "Category Name 3"
-                    }
-                };
             }
         }
 
@@ -60,7 +33,7 @@ namespace BookStore.Domain.Tests
             public async void ShouldReturnAListOfCategories_WhenCategoriesExist()
             {
                 // Arrange
-                var categories = CreateCategoryList();
+                var categories = _fixture.Create<List<Category>>();
 
                 _categoryRepositoryMock.Setup(c =>
                     c.GetAll()).ReturnsAsync(categories);
@@ -108,7 +81,7 @@ namespace BookStore.Domain.Tests
             public async void ShouldReturnCategory_WhenCategoryExist()
             {
                 // Arrange
-                var category = CreateCategory();
+                var category = _fixture.Create<Category>();
 
                 _categoryRepositoryMock.Setup(c =>
                     c.GetById(category.Id)).ReturnsAsync(category);
@@ -156,7 +129,7 @@ namespace BookStore.Domain.Tests
             public async void ShouldAddCategory_WhenCategoryNameDoesNotExist()
             {
                 // Assert
-                var category = CreateCategory();
+                var category = _fixture.Create<Category>();
 
                 _categoryRepositoryMock.Setup(c =>
                     c.Search(c => c.Name == category.Name))
@@ -168,15 +141,16 @@ namespace BookStore.Domain.Tests
 
                 // Assert
                 result.Should().NotBeNull();
-                result.Should().BeOfType<Category>();
+                result.Should().BeOfType<OperationResult<Category>>();
+                result.Success.Should().BeTrue();
             }
 
             [Fact]
             public async void ShouldNotAddCategory_WhenCategoryNameAlreadyExist()
             {
                 // Arrange
-                var category = CreateCategory();
-                var categoryList = new List<Category>() { category };
+                var category = _fixture.Create<Category>();
+                var categoryList = _fixture.Create<List<Category>>();
 
                 _categoryRepositoryMock.Setup(c =>
                     c.Search(c => c.Name == category.Name)).ReturnsAsync(categoryList);
@@ -185,14 +159,15 @@ namespace BookStore.Domain.Tests
                 var result = await _categoryService.Add(category);
 
                 // Assert
-                result.Should().BeNull();
+                result.Should().NotBeNull();
+                result.Success.Should().BeFalse();
             }
 
             [Fact]
             public async void ShouldCallAddFromRepository_OnlyOnce()
             {
                 // Arrange
-                var category = CreateCategory();
+                var category = _fixture.Create<Category>();
 
                 _categoryRepositoryMock.Setup(c =>
                         c.Search(c => c.Name == category.Name))
@@ -213,7 +188,7 @@ namespace BookStore.Domain.Tests
             public async void ShouldUpdateCategory_WhenCategoryNameDoesNotExist()
             {
                 // Arrange
-                var category = CreateCategory();
+                var category = _fixture.Create<Category>();
 
                 _categoryRepositoryMock.Setup(c =>
                     c.Search(c => c.Name == category.Name && c.Id != category.Id))
@@ -225,22 +200,17 @@ namespace BookStore.Domain.Tests
 
                 // Assert
                 result.Should().NotBeNull();
-                result.Should().BeOfType<Category>();
+                result.Success.Should().BeTrue();
+                result.Payload.Should().NotBeNull();
+                result.Should().BeOfType<OperationResult<Category>>();
             }
 
             [Fact]
             public async void ShouldNotUpdateCategory_WhenCategoryDoesNotExist()
             {
                 // Arrange
-                var category = CreateCategory();
-                var categoryList = new List<Category>()
-                {
-                    new Category()
-                    {
-                        Id = 2,
-                        Name = "Category Name 2"
-                    }
-                };
+                var category = _fixture.Create<Category>();
+                var categoryList = _fixture.CreateMany<Category>();
 
                 _categoryRepositoryMock.Setup(c =>
                         c.Search(c => c.Name == category.Name && c.Id != category.Id))
@@ -250,14 +220,37 @@ namespace BookStore.Domain.Tests
                 var result = await _categoryService.Update(category);
 
                 // Assert
-                result.Should().BeNull();
+                result.Should().NotBeNull();
+                result.Success.Should().BeFalse();
+                result.Payload.Should().NotBeNull();
+            }
+
+
+            [Fact]
+            public async void ShouldNotUpdateCategory_WhenCategoryNameIsAlreadyBeingUsed()
+            {
+                // Arrange
+                var category = _fixture.Create<Category>();
+                var categoryList = _fixture.CreateMany<Category>();
+
+                _categoryRepositoryMock.Setup(c =>
+                        c.Search(c => c.Name == category.Name && c.Id != category.Id))
+                    .ReturnsAsync(categoryList);
+
+                // Act
+                var result = await _categoryService.Update(category);
+
+                // Assert
+                result.Should().NotBeNull();
+                result.Success.Should().BeFalse();
+                result.Payload.Should().NotBeNull();
             }
 
             [Fact]
             public async void ShouldCallUpdateFromRepository_OnlyOnce()
             {
                 // Arrange
-                var category = CreateCategory();
+                var category = _fixture.Create<Category>();
 
                 _categoryRepositoryMock.Setup(c =>
                         c.Search(c => c.Name == category.Name && c.Id != category.Id))
@@ -277,7 +270,7 @@ namespace BookStore.Domain.Tests
             public async void ShouldRemoveCategory_WhenCategoryDoNotHaveRelatedBooks()
             {
                 // Arrange
-                var category = CreateCategory();
+                var category = _fixture.Create<Category>();
 
                 _bookService.Setup(b =>
                     b.GetBooksByCategory(category.Id)).ReturnsAsync(new List<Book>());
@@ -293,18 +286,11 @@ namespace BookStore.Domain.Tests
             public async void ShouldNotRemoveCategory_WhenCategoryHasRelatedBooks()
             {
                 // Arrange
-                var category = CreateCategory();
+                var category = _fixture.Create<Category>();
 
-                var books = new List<Book>()
-                {
-                    new Book()
-                    {
-                        Id = 1,
-                        Name = "Test Name 1",
-                        Author = "Test Author 1",
-                        CategoryId = category.Id
-                    }
-                };
+                var books = _fixture.Build<Book>()
+                    .With(p => p.CategoryId, category.Id)
+                    .CreateMany();
 
                 _bookService.Setup(b => b.GetBooksByCategory(category.Id)).ReturnsAsync(books);
 
@@ -319,7 +305,7 @@ namespace BookStore.Domain.Tests
             public async void ShouldCallRemoveFromRepository_OnlyOnce()
             {
                 // Arrange
-                var category = CreateCategory();
+                var category = _fixture.Create<Category>();
 
                 _bookService.Setup(b =>
                     b.GetBooksByCategory(category.Id)).ReturnsAsync(new List<Book>());
@@ -338,16 +324,15 @@ namespace BookStore.Domain.Tests
             public async void ShouldReturnAListOfCategory_WhenCategoriesWithSearchedNameExist()
             {
                 // Arrange
-                var categoryList = CreateCategoryList();
-                var searchedCategory = CreateCategory();
-                var categoryName = searchedCategory.Name;
+                var categoryList = _fixture.Create<List<Category>>();
+                var categoryName = _fixture.Create<string>();
 
                 _categoryRepositoryMock.Setup(c =>
                     c.Search(c => c.Name.Contains(categoryName)))
                     .ReturnsAsync(categoryList);
 
                 // Act
-                var result = await _categoryService.Search(searchedCategory.Name);
+                var result = await _categoryService.Search(categoryName);
 
                 // Assert
                 result.Should().NotBeNull();
@@ -358,15 +343,15 @@ namespace BookStore.Domain.Tests
             public async void ShouldReturnNull_WhenCategoriesWithSearchedNameDoNotExist()
             {
                 // Arrange
-                var searchedCategory = CreateCategory();
-                var categoryName = searchedCategory.Name;
+                var searchedCategory = _fixture.Create<Category>();
+                var categoryName = _fixture.Create<string>();
 
                 _categoryRepositoryMock.Setup(c =>
                     c.Search(c => c.Name.Contains(categoryName)))
                     .ReturnsAsync((IEnumerable<Category>)(null));
 
                 // Act
-                var result = await _categoryService.Search(searchedCategory.Name);
+                var result = await _categoryService.Search(categoryName);
 
                 // Assert
                 result.Should().BeNull();
@@ -376,16 +361,15 @@ namespace BookStore.Domain.Tests
             public async void ShouldCallSearchFromRepository_OnlyOnce()
             {
                 // Arrange
-                var categoryList = CreateCategoryList();
-                var searchedCategory = CreateCategory();
-                var categoryName = searchedCategory.Name;
+                var categoryList = _fixture.Create<List<Category>>();
+                var categoryName = _fixture.Create<string>();
 
                 _categoryRepositoryMock.Setup(c =>
                         c.Search(c => c.Name.Contains(categoryName)))
                     .ReturnsAsync(categoryList);
 
                 // Act
-                await _categoryService.Search(searchedCategory.Name);
+                await _categoryService.Search(categoryName);
 
                 // Assert
                 _categoryRepositoryMock.Verify(mock => mock.Search(c => c.Name.Contains(categoryName)), Times.Once);

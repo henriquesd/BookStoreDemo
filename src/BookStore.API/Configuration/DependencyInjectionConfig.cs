@@ -2,7 +2,6 @@
 using BookStore.Domain.Services;
 using BookStore.Infrastructure.Context;
 using BookStore.Infrastructure.Repositories;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace BookStore.API.Configuration
 {

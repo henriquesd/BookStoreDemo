@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
 using BookStore.API.Dtos.Category;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers
@@ -28,7 +25,9 @@ namespace BookStore.API.Controllers
         {
             var categories = await _categoryService.GetAll();
 
-            return Ok(_mapper.Map<IEnumerable<CategoryResultDto>>(categories));
+            var categoryResultDtoList = _mapper.Map<IEnumerable<CategoryResultDto>>(categories);
+
+            return Ok(categoryResultDtoList);
         }
 
         [HttpGet("{id:int}")]
@@ -40,7 +39,9 @@ namespace BookStore.API.Controllers
 
             if (category == null) return NotFound();
 
-            return Ok(_mapper.Map<CategoryResultDto>(category));
+            var categoryResultDto = _mapper.Map<CategoryResultDto>(category);
+
+            return Ok(categoryResultDto);
         }
 
         [HttpPost]
@@ -51,11 +52,11 @@ namespace BookStore.API.Controllers
             if (!ModelState.IsValid) return BadRequest();
 
             var category = _mapper.Map<Category>(categoryDto);
-            var categoryResult = await _categoryService.Add(category);
+            var result = await _categoryService.Add(category);
 
-            if (categoryResult == null) return BadRequest();
+            if (!result.Success) return BadRequest(result);
 
-            return Ok(_mapper.Map<CategoryResultDto>(categoryResult));
+            return Ok(result);
         }
 
         [HttpPut("{id:int}")]
@@ -64,12 +65,15 @@ namespace BookStore.API.Controllers
         public async Task<IActionResult> Update(int id, CategoryEditDto categoryDto)
         {
             if (id != categoryDto.Id) return BadRequest();
-
             if (!ModelState.IsValid) return BadRequest();
 
-            await _categoryService.Update(_mapper.Map<Category>(categoryDto));
+            var category = _mapper.Map<Category>(categoryDto);
+            
+            var result = await _categoryService.Update(category);
 
-            return Ok(categoryDto);
+            if (!result.Success) return BadRequest(result);
+
+            return Ok(result);
         }
 
         [HttpDelete("{id:int}")]
@@ -93,10 +97,9 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<List<Category>>> Search(string category)
         {
-            var categories = _mapper.Map<List<Category>>(await _categoryService.Search(category));
+            var categories = await _categoryService.Search(category);
 
-            if (categories == null || categories.Count == 0)
-                return NotFound("None category was founded");
+            if (!categories.Any()) return NotFound("None category was founded");
 
             return Ok(categories);
         }

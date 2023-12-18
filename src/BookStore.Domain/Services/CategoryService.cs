@@ -27,22 +27,38 @@ namespace BookStore.Domain.Services
             return await _categoryRepository.GetById(id);
         }
 
-        public async Task<Category> Add(Category category)
+        public async Task<IOperationResult<Category>> Add(Category category)
         {
-            if (_categoryRepository.Search(c => c.Name == category.Name).Result.Any())
-                return null;
+            try
+            {
+                if (_categoryRepository.Search(c => c.Name == category.Name).Result.Any())
+                    return new OperationResult<Category>(category) { Success = false, Message = "This category name is already being used" };
 
-            await _categoryRepository.Add(category);
-            return category;
+                await _categoryRepository.Add(category);
+
+                return new OperationResult<Category>(category);
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult<Category>(category) { Success = false, Message = ex.Message };
+            }
         }
 
-        public async Task<Category> Update(Category category)
+        public async Task<IOperationResult<Category>> Update(Category category)
         {
-            if (_categoryRepository.Search(c => c.Name == category.Name && c.Id != category.Id).Result.Any())
-                return null;
+            try
+            {
+                if (_categoryRepository.Search(c => c.Name == category.Name && c.Id != category.Id).Result.Any())
+                    return new OperationResult<Category>(category) { Success = false, Message = "This category name is already being used" };
 
-            await _categoryRepository.Update(category);
-            return category;
+                await _categoryRepository.Update(category);
+
+                return new OperationResult<Category>(category);
+            }
+            catch (Exception ex)
+            {
+                return new OperationResult<Category>(category) { Success = false, Message = ex.Message };
+            }
         }
 
         public async Task<bool> Remove(Category category)

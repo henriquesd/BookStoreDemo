@@ -13,6 +13,7 @@ Web API Project using .NET 8.0
 - xUnit
 - Moq
 - Fluent Assertions
+- AutoFixture
 - SQLite In-Memory database
 
 ## Architecture
