@@ -52,13 +52,11 @@ namespace BookStore.API.Controllers
             if (!ModelState.IsValid) return BadRequest();
 
             var category = _mapper.Map<Category>(categoryDto);
-            var categoryResult = await _categoryService.Add(category);
+            var result = await _categoryService.Add(category);
 
-            if (categoryResult == null) return BadRequest();
+            if (!result.Success) return BadRequest(result);
 
-            var categoryResultDto = _mapper.Map<CategoryResultDto>(categoryResult);
-
-            return Ok(categoryResultDto);
+            return Ok(result);
         }
 
         [HttpPut("{id:int}")]

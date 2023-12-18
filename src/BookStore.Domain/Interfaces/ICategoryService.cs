@@ -6,7 +6,7 @@ namespace BookStore.Domain.Interfaces
     {
         Task<IEnumerable<Category>> GetAll();
         Task<Category> GetById(int id);
-        Task<Category> Add(Category category);
+        Task<IOperationResult<Category>> Add(Category category);
         Task<IOperationResult<Category>> Update(Category category);
         Task<bool> Remove(Category category);
         Task<IEnumerable<Category>> Search(string categoryName);

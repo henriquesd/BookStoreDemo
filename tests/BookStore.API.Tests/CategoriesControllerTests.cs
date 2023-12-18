@@ -143,13 +143,16 @@ namespace BookStore.API.Tests
             {
                 // Arrange
                 var category = _fixture.Create<Category>();
+                var categoryResult = _fixture.Build<OperationResult<Category>>()
+                    .With(p => p.Payload, category)
+                    .Create();
                 var categoryAddDto = _fixture.Build<CategoryAddDto>()
                     .With(p => p.Name, category.Name)
                     .Create();
                 var categoryResultDto = _fixture.Create<CategoryResultDto>();
 
                 _mapperMock.Setup(m => m.Map<Category>(It.IsAny<CategoryAddDto>())).Returns(category);
-                _categoryServiceMock.Setup(c => c.Add(category)).ReturnsAsync(category);
+                _categoryServiceMock.Setup(c => c.Add(category)).ReturnsAsync(categoryResult);
                 _mapperMock.Setup(m => m.Map<CategoryResultDto>(It.IsAny<Category>())).Returns(categoryResultDto);
 
                 // Act
@@ -174,35 +177,19 @@ namespace BookStore.API.Tests
             }
 
             [Fact]
-            public async void ShouldReturnBadRequest_WhenCategoryResultIsNull()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
-                var categoryAddDto = _fixture.Build<CategoryAddDto>()
-                   .With(p => p.Name, category.Name)
-                   .Create();
-
-                _mapperMock.Setup(m => m.Map<Category>(It.IsAny<CategoryAddDto>())).Returns(category);
-                _categoryServiceMock.Setup(c => c.Add(category)).ReturnsAsync((Category)null);
-
-                // Act
-                var result = await _categoriesController.Add(categoryAddDto);
-
-                // Assert
-                result.Should().BeOfType<BadRequestResult>();
-            }
-
-            [Fact]
             public async void ShouldCallAddFromService_OnlyOnce()
             {
                 // Arrange
                 var category = _fixture.Create<Category>();
+                var categoryResult = _fixture.Build<OperationResult<Category>>()
+                    .With(p => p.Payload, category)
+                    .Create();
                 var categoryAddDto = _fixture.Build<CategoryAddDto>()
                    .With(p => p.Name, category.Name)
                    .Create();
 
                 _mapperMock.Setup(m => m.Map<Category>(It.IsAny<CategoryAddDto>())).Returns(category);
-                _categoryServiceMock.Setup(c => c.Add(category)).ReturnsAsync(category);
+                _categoryServiceMock.Setup(c => c.Add(category)).ReturnsAsync(categoryResult);
 
                 // Act
                 await _categoriesController.Add(categoryAddDto);
@@ -214,13 +201,14 @@ namespace BookStore.API.Tests
 
         public class Update : CategoriesControllerTestsBase
         {
-
             [Fact]
             public async void ShouldReturnOk_WhenCategoryIsUpdatedCorrectly()
             {
                 // Arrange
                 var category = _fixture.Create<Category>();
-                var categoryResult = _fixture.Create<OperationResult<Category>>();
+                var categoryResult = _fixture.Build<OperationResult<Category>>()
+                    .With(p => p.Payload, category)
+                    .Create();
                 var categoryEditDto = _fixture.Build<CategoryEditDto>()
                     .With(p => p.Id, category.Id)
                     .With(p => p.Name, "NameUpdated")
