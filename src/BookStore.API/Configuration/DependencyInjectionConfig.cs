@@ -17,6 +17,8 @@ namespace BookStore.API.Configuration
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IBookService, BookService>();
 
+            services.AddTransient<DatabaseSeeder>();
+
             return services;
         }
     }

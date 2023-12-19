@@ -14,7 +14,7 @@ namespace BookStore.API.Controllers
         private readonly IMapper _mapper;
 
         public CategoriesController(IMapper mapper,
-                                    ICategoryService categoryService)
+            ICategoryService categoryService)
         {
             _mapper = mapper;
             _categoryService = categoryService;
@@ -35,6 +35,8 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
         {
+            if (pageNumber == 0 || pageSize == 0) return BadRequest();
+
             var paginatedCategories = await _categoryService.GetAllWithPagination(pageNumber, pageSize);
 
             var categoriesResultDto = _mapper.Map<PagedResponseDto<CategoryResultDto>>(paginatedCategories);

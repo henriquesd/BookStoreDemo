@@ -1,11 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
 using BookStore.API.Dtos.Book;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using static BookStore.API.Dtos.PaginationDto;
 
@@ -37,6 +33,8 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
         {
+            if (pageNumber == 0 || pageSize == 0) return BadRequest();
+
             var paginatedBooks = await _bookService.GetAllWithPagination(pageNumber, pageSize);
 
             var booksResultDto = _mapper.Map<PagedResponseDto<BookResultDto>>(paginatedBooks);

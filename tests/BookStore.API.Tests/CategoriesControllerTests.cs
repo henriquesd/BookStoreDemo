@@ -9,6 +9,8 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
+using static BookStore.API.Dtos.PaginationDto;
+using static BookStore.Domain.Models.Pagination;
 
 namespace BookStore.API.Tests
 {
@@ -83,6 +85,90 @@ namespace BookStore.API.Tests
 
                 // Assert
                 _categoryServiceMock.Verify(mock => mock.GetAll(), Times.Once);
+            }
+        }
+
+        public class GetAllWithPagination : CategoriesControllerTestsBase
+        {
+            [Fact]
+            public async void ShouldReturnOk_WhenExistCategory()
+            {
+                // Arrange
+                var categories = _fixture.Build<Category>()
+                    .CreateMany()
+                    .ToList();
+                var pagedResponse = _fixture.Build<PagedResponse<Category>>()
+                    .With(p => p.Data, categories)
+                    .Create();
+                var pagedResponseDto = _fixture.Build<PagedResponseDto<CategoryResultDto>>()
+                    .With(p => p.Data, _fixture.Build<CategoryResultDto>().CreateMany().ToList())
+                    .Create();
+
+                _categoryServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+                _mapperMock.Setup(m => m.Map<PagedResponseDto<CategoryResultDto>>(It.IsAny<PagedResponse<Category>>())).Returns(pagedResponseDto);
+
+                // Act
+                var result = await _categoriesController.GetAllWithPagination();
+
+                // Assert
+                result.Should().BeOfType<OkObjectResult>();
+            }
+
+            [Fact]
+            public async void ShouldReturnOk_WhenDoesNotExistAnyCategory()
+            {
+                // Arrange
+                var pagedResponse = _fixture.Build<PagedResponse<Category>>()
+                    .Without(p => p.Data)
+                    .Create();
+                var pagedResponseDto = _fixture.Build<PagedResponseDto<CategoryResultDto>>()
+                    .Without(p => p.Data)
+                    .Create();
+
+                _categoryServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+                _mapperMock.Setup(m => m.Map<PagedResponseDto<CategoryResultDto>>(It.IsAny<PagedResponse<Category>>())).Returns(pagedResponseDto);
+
+                // Act
+                var result = await _categoriesController.GetAllWithPagination();
+
+                // Assert
+                result.Should().BeOfType<OkObjectResult>();
+            }
+
+            [Fact]
+            public async void ShouldCallGetAllWithPaginationFromService_OnlyOnce()
+            {
+                // Arrange
+                var categories = _fixture.Build<Category>()
+                    .CreateMany()
+                    .ToList();
+                var pagedResponse = _fixture.Build<PagedResponse<Category>>()
+                    .With(p => p.Data, categories)
+                    .Create();
+                var pagedResponseDto = _fixture.Build<PagedResponseDto<CategoryResultDto>>()
+                    .With(p => p.Data, _fixture.Build<CategoryResultDto>().CreateMany().ToList())
+                    .Create();
+
+                _categoryServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+                _mapperMock.Setup(m => m.Map<PagedResponseDto<CategoryResultDto>>(It.IsAny<PagedResponse<Category>>())).Returns(pagedResponseDto);
+
+                // Act
+                await _categoriesController.GetAllWithPagination();
+
+                // Assert
+                _categoryServiceMock.Verify(mock => mock.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+            }
+
+            [Theory]
+            [InlineData(0, 10)]
+            [InlineData(1, 0)]
+            public async void ShouldReturnBadRequest_WhenPaginationParametersAreInvalid(int pageNumber, int pageSize)
+            {
+                // Act
+                var result = await _categoriesController.GetAllWithPagination(pageNumber, pageSize);
+
+                // Assert
+                result.Should().BeOfType<BadRequestResult>();
             }
         }
 

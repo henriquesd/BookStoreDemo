@@ -66,6 +66,15 @@ namespace BookStore.API
             {
                 endpoints.MapControllers();
             });
+
+            if (env.IsDevelopment())
+            {
+                using (var scope = app.ApplicationServices.CreateScope())
+                {
+                    var databaseSeeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+                    databaseSeeder.SeedData();
+                }
+            }
         }
     }
 }
