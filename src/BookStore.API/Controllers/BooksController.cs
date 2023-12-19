@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
+using BookStore.API.Dtos;
 using BookStore.API.Dtos.Book;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
-using static BookStore.API.Dtos.PaginationDto;
 
 namespace BookStore.API.Controllers
 {

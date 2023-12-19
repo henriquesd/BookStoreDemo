@@ -1,6 +1,7 @@
 ﻿using AutoFixture;
 using AutoMapper;
 using BookStore.API.Controllers;
+using BookStore.API.Dtos;
 using BookStore.API.Dtos.Category;
 using BookStore.API.Tests.Helpers;
 using BookStore.Domain.Interfaces;
@@ -9,8 +10,6 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
-using static BookStore.API.Dtos.PaginationDto;
-using static BookStore.Domain.Models.Pagination;
 
 namespace BookStore.API.Tests
 {

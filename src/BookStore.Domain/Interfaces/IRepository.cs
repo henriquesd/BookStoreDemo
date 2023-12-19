@@ -1,6 +1,5 @@
 ﻿using System.Linq.Expressions;
 using BookStore.Domain.Models;
-using static BookStore.Domain.Models.Pagination;
 
 namespace BookStore.Domain.Interfaces
 {

@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
+using BookStore.API.Dtos;
 using BookStore.API.Dtos.Book;
 using BookStore.Domain.Models;
-using static BookStore.API.Dtos.PaginationDto;
 
 namespace BookStore.API.Configuration.Mappers
 {
@@ -13,7 +13,7 @@ namespace BookStore.API.Configuration.Mappers
             CreateMap<Book, BookEditDto>().ReverseMap();
             CreateMap<Book, BookResultDto>().ReverseMap();
 
-            CreateMap<Pagination.PagedResponse<Book>, PagedResponseDto<BookResultDto>>()
+            CreateMap<PagedResponse<Book>, PagedResponseDto<BookResultDto>>()
                .ForMember(dest => dest.Data, opt => opt.MapFrom(src => src.Data));
         }
     }

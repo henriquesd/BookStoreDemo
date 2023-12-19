@@ -17,7 +17,7 @@ namespace BookStore.Domain.Services
             return await _bookRepository.GetAll();
         }
 
-        public async Task<Pagination.PagedResponse<Book>> GetAllWithPagination(int pageNumber, int pageSize)
+        public async Task<PagedResponse<Book>> GetAllWithPagination(int pageNumber, int pageSize)
         {
             return await _bookRepository.GetAllWithPagination(pageNumber, pageSize);
         }

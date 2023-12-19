@@ -2,7 +2,6 @@
 using BookStore.Domain.Models;
 using BookStore.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
-using static BookStore.Domain.Models.Pagination;
 
 namespace BookStore.Infrastructure.Repositories
 {

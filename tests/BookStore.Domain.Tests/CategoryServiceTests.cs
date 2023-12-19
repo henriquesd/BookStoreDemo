@@ -6,7 +6,6 @@ using BookStore.Domain.Tests.Helpers;
 using FluentAssertions;
 using Moq;
 using Xunit;
-using static BookStore.Domain.Models.Pagination;
 
 namespace BookStore.Domain.Tests
 {
