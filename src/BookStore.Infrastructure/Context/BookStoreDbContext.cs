@@ -21,12 +21,5 @@ namespace BookStore.Infrastructure.Context
 
             base.OnModelCreating(modelBuilder);
         }
-
-        private static void SeedEntity<TEntity>(ModelBuilder modelBuilder, int count, Func<int, TEntity> createEntity) 
-            where TEntity : class
-        {
-            var entities = Enumerable.Range(1, count).Select(createEntity).ToList();
-            modelBuilder.Entity<TEntity>().HasData(entities);
-        }
     }
 }
