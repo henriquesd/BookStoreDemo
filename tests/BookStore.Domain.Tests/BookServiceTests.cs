@@ -1,6 +1,8 @@
-﻿using BookStore.Domain.Interfaces;
+﻿using AutoFixture;
+using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using BookStore.Domain.Services;
+using BookStore.Domain.Tests.Helpers;
 using FluentAssertions;
 using Moq;
 using Xunit;
@@ -11,11 +13,13 @@ namespace BookStore.Domain.Tests
     {
         public abstract class BookServiceTestsBase
         {
+            protected readonly Fixture _fixture;
             protected readonly Mock<IBookRepository> _bookRepositoryMock;
             protected readonly BookService _bookService;
 
             protected BookServiceTestsBase()
             {
+                _fixture = FixtureFactory.Create();
                 _bookRepositoryMock = new Mock<IBookRepository>();
                 _bookService = new BookService(_bookRepositoryMock.Object);
             }
@@ -113,6 +117,64 @@ namespace BookStore.Domain.Tests
 
                 // Assert
                 _bookRepositoryMock.Verify(mock => mock.GetAll(), Times.Once);
+            }
+        }
+
+        public class GetAllWithPagination : BookServiceTestsBase
+        {
+            [Fact]
+            public async void ShouldReturnAPagedResponseOfBooks_WhenBooksExist()
+            {
+                // Arrange
+                var categories = _fixture.Build<Book>()
+                    .CreateMany()
+                    .ToList();
+                var pagedResponse = _fixture.Build<PagedResponse<Book>>()
+                    .With(p => p.Data, categories)
+                    .Create();
+
+                _bookRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+
+                // Act
+                var result = await _bookService.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>());
+
+                // Assert
+                result.Should().NotBeNull();
+                result.Should().BeOfType<PagedResponse<Book>>();
+            }
+
+            [Fact]
+            public async void ShouldReturnAnEmptyList_WhenCategoriesDoNotExist()
+            {
+                // Arrange
+                var pagedResponse = _fixture.Build<PagedResponse<Book>>()
+                    .Without(p => p.Data)
+                    .Do(p => p.Data = new List<Book>())
+                    .Create();
+
+                _bookRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+
+                // Act
+                var result = await _bookService.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>());
+
+                // Assert
+                result.Should().NotBeNull();
+                result.Data.Should().BeEmpty();
+            }
+
+            [Fact]
+            public async void ShouldCallGetAllWithPaginationFromRepository_OnlyOnce()
+            {
+                // Arrange
+                var pagedResponse = _fixture.Create<PagedResponse<Book>>();
+
+                _bookRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+
+                // Act
+                var result = await _bookService.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>());
+
+                // Assert
+                _bookRepositoryMock.Verify(mock => mock.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
             }
         }
 

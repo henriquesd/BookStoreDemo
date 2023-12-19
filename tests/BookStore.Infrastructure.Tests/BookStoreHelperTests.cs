@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using BookStore.Domain.Models;
+﻿using BookStore.Domain.Models;
 using BookStore.Infrastructure.Context;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;

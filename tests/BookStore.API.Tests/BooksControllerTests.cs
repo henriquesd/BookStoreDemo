@@ -1,6 +1,10 @@
-﻿using AutoMapper;
+﻿using AutoFixture;
+using AutoMapper;
 using BookStore.API.Controllers;
+using BookStore.API.Dtos;
 using BookStore.API.Dtos.Book;
+using BookStore.API.Dtos.Category;
+using BookStore.API.Tests.Helpers;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using FluentAssertions;
@@ -14,12 +18,14 @@ namespace BookStore.API.Tests
     {
         public abstract class BooksControllerTestsBase
         {
+            protected readonly Fixture _fixture;
             protected readonly BooksController _booksController;
             protected readonly Mock<IBookService> _bookServiceMock;
             protected readonly Mock<IMapper> _mapperMock;
 
             protected BooksControllerTestsBase()
             {
+                _fixture = FixtureFactory.Create();
                 _bookServiceMock = new Mock<IBookService>();
                 _mapperMock = new Mock<IMapper>();
                 _booksController = new BooksController(_mapperMock.Object, _bookServiceMock.Object);
@@ -166,6 +172,93 @@ namespace BookStore.API.Tests
 
                 // Assert
                 _bookServiceMock.Verify(mock => mock.GetAll(), Times.Once);
+            }
+        }
+
+        public class GetAllWithPagination : BooksControllerTestsBase
+        {
+            [Fact]
+            public async void ShouldReturnOk_WhenExistBooks()
+            {
+                // Arrange
+                var books = _fixture.Build<Book>()
+                   .CreateMany()
+                   .ToList();
+                var pagedResponse = _fixture.Build<PagedResponse<Book>>()
+                    .With(p => p.Data, books)
+                    .Create();
+                var pagedResponseDto = _fixture.Build<PagedResponseDto<BookResultDto>>()
+                    .With(p => p.Data, _fixture.Build<BookResultDto>().CreateMany().ToList())
+                    .Create();
+
+                _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+                _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Category>>())).Returns(pagedResponseDto);
+
+
+                // Act
+                var result = await _booksController.GetAllWithPagination();
+
+                // Assert
+                result.Should().BeOfType<OkObjectResult>();
+            }
+
+            [Fact]
+            public async void ShouldReturnOk_WhenDoesNotExistAnyBook()
+            {
+                // Arrange
+                var pagedResponse = _fixture.Build<PagedResponse<Book>>()
+                    .Without(p => p.Data)
+                    .Create();
+                var pagedResponseDto = _fixture.Build<PagedResponseDto<BookResultDto>>()
+                    .Without(p => p.Data)
+                    .Create();
+
+                _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+                _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Category>>())).Returns(pagedResponseDto);
+
+                // Act
+                var result = await _booksController.GetAllWithPagination();
+
+                // Assert
+                result.Should().BeOfType<OkObjectResult>();
+            }
+
+            [Fact]
+            public async void ShouldCallGetAllWithPaginationFromService_OnlyOnce()
+            {
+                // Arrange
+                var books = _fixture.Build<Book>()
+                    .CreateMany()
+                    .ToList();
+                var pagedResponse = _fixture.Build<PagedResponse<Book>>()
+                    .With(p => p.Data, books)
+                    .Create();
+                var pagedResponseDto = _fixture.Build<PagedResponseDto<BookResultDto>>()
+                    .With(p => p.Data, _fixture.Build<BookResultDto>().CreateMany().ToList())
+                    .Create();
+
+                _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+                _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Book>>())).Returns(pagedResponseDto);
+
+                // Act
+                await _booksController.GetAllWithPagination();
+
+                // Assert
+                _bookServiceMock.Verify(mock => mock.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+            }
+
+            [Theory]
+            [InlineData(0, 10)]
+            [InlineData(1, 0)]
+            [InlineData(-1, 10)]
+            [InlineData(1, -1)]
+            public async void ShouldReturnBadRequest_WhenPaginationParametersAreInvalid(int pageNumber, int pageSize)
+            {
+                // Act
+                var result = await _booksController.GetAllWithPagination(pageNumber, pageSize);
+
+                // Assert
+                result.Should().BeOfType<BadRequestResult>();
             }
         }
 

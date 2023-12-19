@@ -35,7 +35,8 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
         {
-            if (pageNumber == 0 || pageSize == 0) return BadRequest();
+            if (pageNumber == 0 || pageSize == 0 ||
+                pageNumber < 0 || pageSize < 0)  return BadRequest();
 
             var paginatedCategories = await _categoryService.GetAllWithPagination(pageNumber, pageSize);
 

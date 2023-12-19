@@ -161,6 +161,8 @@ namespace BookStore.API.Tests
             [Theory]
             [InlineData(0, 10)]
             [InlineData(1, 0)]
+            [InlineData(-1, 10)]
+            [InlineData(1, -1)]
             public async void ShouldReturnBadRequest_WhenPaginationParametersAreInvalid(int pageNumber, int pageSize)
             {
                 // Act

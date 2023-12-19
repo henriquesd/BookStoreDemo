@@ -77,7 +77,7 @@ namespace BookStore.Domain.Tests
         public class GetAllWithPagination : CategoryServiceTestsBase
         {
             [Fact]
-            public async void ShouldReturnAListOfCategories_WhenCategoriesExist()
+            public async void ShouldReturnAPagedResponseOfCategories_WhenCategoriesExist()
             {
                 // Arrange
                 var categories = _fixture.Build<Category>()
