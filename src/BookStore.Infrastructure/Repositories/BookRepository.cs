@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using BookStore.Domain.Interfaces;
+﻿using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using BookStore.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +14,21 @@ namespace BookStore.Infrastructure.Repositories
             return await Db.Books.AsNoTracking().Include(b => b.Category)
                 .OrderBy(b => b.Name)
                 .ToListAsync();
+        }
+
+        public async Task<PagedResponse<Book>> GetAllWithPagination(int pageNumber, int pageSize)
+        {
+            var totalItems = await Db.Books.AsNoTracking().CountAsync();
+
+            var books = await Db.Books.AsNoTracking()
+                .Include(b => b.Category)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var pagedResponse = new PagedResponse<Book>(books, pageNumber, totalItems, pageSize);
+
+            return pagedResponse;
         }
 
         public override async Task<Book> GetById(int id)

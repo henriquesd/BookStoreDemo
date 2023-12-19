@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using BookStore.Domain.Models;
+﻿using BookStore.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookStore.Infrastructure.Context
@@ -19,9 +18,6 @@ namespace BookStore.Infrastructure.Context
                 property.SetColumnType("varchar(150)");
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(BookStoreDbContext).Assembly);
-
-            foreach (var relationship in modelBuilder.Model.GetEntityTypes()
-                .SelectMany(e => e.GetForeignKeys())) relationship.DeleteBehavior = DeleteBehavior.ClientSetNull;
 
             base.OnModelCreating(modelBuilder);
         }

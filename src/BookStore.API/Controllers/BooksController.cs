@@ -1,11 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
+using BookStore.API.Dtos;
 using BookStore.API.Dtos.Book;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers
@@ -30,6 +27,20 @@ namespace BookStore.API.Controllers
             var books = await _bookService.GetAll();
 
             return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
+        }
+
+        [HttpGet("GetAllWithPagination")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
+        {
+            if (pageNumber == 0 || pageSize == 0 ||
+                pageNumber < 0 || pageSize < 0) return BadRequest();
+
+            var paginatedBooks = await _bookService.GetAllWithPagination(pageNumber, pageSize);
+
+            var booksResultDto = _mapper.Map<PagedResponseDto<BookResultDto>>(paginatedBooks);
+
+            return Ok(booksResultDto);
         }
 
         [HttpGet("{id:int}")]

@@ -1,12 +1,6 @@
-using AutoMapper;
 using BookStore.API.Configuration;
 using BookStore.Infrastructure.Context;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 
 namespace BookStore.API
@@ -72,6 +66,15 @@ namespace BookStore.API
             {
                 endpoints.MapControllers();
             });
+
+            if (env.IsDevelopment())
+            {
+                using (var scope = app.ApplicationServices.CreateScope())
+                {
+                    var databaseSeeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+                    databaseSeeder.SeedData();
+                }
+            }
         }
     }
 }

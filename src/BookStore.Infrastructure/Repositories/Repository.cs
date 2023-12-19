@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
+﻿using System.Linq.Expressions;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using BookStore.Infrastructure.Context;
@@ -31,6 +27,20 @@ namespace BookStore.Infrastructure.Repositories
         public virtual async Task<List<TEntity>> GetAll()
         {
             return await DbSet.ToListAsync();
+        }
+
+        public virtual async Task<PagedResponse<TEntity>> GetAllWithPagination(int pageNumber, int pageSize)
+        {
+            var totalItems = await Db.Set<TEntity>().AsNoTracking().CountAsync();
+
+            var entities = await Db.Set<TEntity>().AsNoTracking()
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var pagedResponse = new PagedResponse<TEntity>(entities, pageNumber, totalItems, pageSize);
+
+            return pagedResponse;
         }
 
         public virtual async Task<TEntity> GetById(int id)

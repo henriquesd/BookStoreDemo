@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
+﻿using System.Linq.Expressions;
 using BookStore.Domain.Models;
 
 namespace BookStore.Domain.Interfaces
@@ -10,6 +7,7 @@ namespace BookStore.Domain.Interfaces
     {
         Task Add(TEntity entity);
         Task<List<TEntity>> GetAll();
+        Task<PagedResponse<TEntity>> GetAllWithPagination(int pageNumber, int pageSize);
         Task<TEntity> GetById(int id);
         Task Update(TEntity entity);
         Task Remove(TEntity entity);

@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using BookStore.Domain.Interfaces;
+﻿using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 
 namespace BookStore.Domain.Services
@@ -20,6 +17,11 @@ namespace BookStore.Domain.Services
         public async Task<IEnumerable<Category>> GetAll()
         {
             return await _categoryRepository.GetAll();
+        }
+
+        public async Task<PagedResponse<Category>> GetAllWithPagination(int pageNumber, int pageSize)
+        {
+            return await _categoryRepository.GetAllWithPagination(pageNumber, pageSize);
         }
 
         public async Task<Category> GetById(int id)

@@ -23,56 +23,57 @@ namespace BookStore.Infrastructure.Tests
                 //_options = BookStoreHelperTests.BookStoreDbContextOptionsEfCoreInMemory();
                 //BookStoreHelperTests.CreateDataBaseEfCoreInMemory(_options);
             }
+
             protected List<Book> CreateBookList()
             {
                 return new List<Book>()
-            {
-                new Book()
                 {
-                    Id = 1,
-                    Name = "Book Test 1",
-                    Author = "Author Test 1",
-                    Description = "Description Test 1",
-                    Value = 10,
-                    CategoryId = 1,
-                    PublishDate = new DateTime(2020, 1, 1, 0, 0, 0, 0),
-                    Category = new Category()
+                    new Book()
                     {
                         Id = 1,
-                        Name = "Category Test 1"
-                    }
-                },
-                new Book()
-                {
-                    Id = 2,
-                    Name = "Book Test 2",
-                    Author = "Author Test 2",
-                    Description = "Description Test 2",
-                    Value = 20,
-                    CategoryId = 1,
-                    PublishDate = new DateTime(2020, 2, 2, 0, 0, 0, 0),
-                    Category = new Category()
+                        Name = "Book Test 1",
+                        Author = "Author Test 1",
+                        Description = "Description Test 1",
+                        Value = 10,
+                        CategoryId = 1,
+                        PublishDate = new DateTime(2020, 1, 1, 0, 0, 0, 0),
+                        Category = new Category()
+                        {
+                            Id = 1,
+                            Name = "Category Test 1"
+                        }
+                    },
+                    new Book()
                     {
-                        Id = 1,
-                        Name = "Category Test 1"
-                    }
-                },
-                new Book()
-                {
-                    Id = 3,
-                    Name = "Book Test 3",
-                    Author = "Author Test 3",
-                    Description = "Description Test 3",
-                    Value = 30,
-                    CategoryId = 3,
-                    PublishDate = new DateTime(2020, 3, 3, 0, 0, 0, 0),
-                    Category = new Category()
+                        Id = 2,
+                        Name = "Book Test 2",
+                        Author = "Author Test 2",
+                        Description = "Description Test 2",
+                        Value = 20,
+                        CategoryId = 1,
+                        PublishDate = new DateTime(2020, 2, 2, 0, 0, 0, 0),
+                        Category = new Category()
+                        {
+                            Id = 1,
+                            Name = "Category Test 1"
+                        }
+                    },
+                    new Book()
                     {
                         Id = 3,
-                        Name = "Category Test 3"
+                        Name = "Book Test 3",
+                        Author = "Author Test 3",
+                        Description = "Description Test 3",
+                        Value = 30,
+                        CategoryId = 3,
+                        PublishDate = new DateTime(2020, 3, 3, 0, 0, 0, 0),
+                        Category = new Category()
+                        {
+                            Id = 3,
+                            Name = "Category Test 3"
+                        }
                     }
-                }
-            };
+                };
             }
         }
 
@@ -133,6 +134,69 @@ namespace BookStore.Infrastructure.Tests
                     bookList.Count().Should().Be(3);
                     bookList.Should().BeEquivalentTo(expectedBooks, options =>
                         options.Excluding(x => x.Category.Books));
+                }
+            }
+        }
+
+        public class GetAllWithPagination : BookRepositoryTestsBase
+        {
+            [Fact]
+            public async void ShouldReturnAListOfPaginatedBook_WhenBooksExist()
+            {
+                await using (var context = new BookStoreDbContext(_options))
+                {
+                    // Arrange
+                    var bookRepository = new BookRepository(context);
+
+                    // Act
+                    var pagedResponse = await bookRepository.GetAllWithPagination(1, 10);
+
+                    // Assert
+                    pagedResponse.Should().NotBeNull();
+                    pagedResponse.Should().BeOfType<PagedResponse<Book>>();
+                }
+            }
+
+            [Fact]
+            public async void ShouldReturnAnEmptyList_WhenBooksDoNotExist()
+            {
+                await BookStoreHelperTests.CleanDataBase(_options);
+
+                await using (var context = new BookStoreDbContext(_options))
+                {
+                    // Arrange
+                    var bookRepository = new BookRepository(context);
+
+                    // Act
+                    var pagedResponse = await bookRepository.GetAllWithPagination(1, 10);
+
+                    // Assert
+                    pagedResponse.Should().NotBeNull();
+                    pagedResponse.Data.Should().BeEmpty();
+                    pagedResponse.Should().BeOfType<PagedResponse<Book>>();
+                }
+            }
+
+            [Fact]
+            public async void ShouldReturnPagedResponseOfBookWithCorrectValues_WhenBooksExist()
+            {
+                await using (var context = new BookStoreDbContext(_options))
+                {
+                    // Arrange
+                    var expectedBooks = CreateBookList();
+                    var bookRepository = new BookRepository(context);
+
+                    // Act
+                    var pagedResponse = await bookRepository.GetAllWithPagination(1, 10);
+
+                    // Assert
+                    pagedResponse.Should().NotBeNull();
+                    pagedResponse.Should().BeOfType<PagedResponse<Book>>();
+                    pagedResponse.Data.Count().Should().Be(3);
+                    pagedResponse.Data.Should().BeEquivalentTo(expectedBooks, options => options
+                        .Excluding(book => book.Category.Books)
+                        .IncludingNestedObjects()
+                    );
                 }
             }
         }

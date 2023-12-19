@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using BookStore.API.Dtos;
 using BookStore.API.Dtos.Category;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
@@ -13,7 +14,7 @@ namespace BookStore.API.Controllers
         private readonly IMapper _mapper;
 
         public CategoriesController(IMapper mapper,
-                                    ICategoryService categoryService)
+            ICategoryService categoryService)
         {
             _mapper = mapper;
             _categoryService = categoryService;
@@ -28,6 +29,20 @@ namespace BookStore.API.Controllers
             var categoryResultDtoList = _mapper.Map<IEnumerable<CategoryResultDto>>(categories);
 
             return Ok(categoryResultDtoList);
+        }
+
+        [HttpGet("GetAllWithPagination")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
+        {
+            if (pageNumber == 0 || pageSize == 0 ||
+                pageNumber < 0 || pageSize < 0)  return BadRequest();
+
+            var paginatedCategories = await _categoryService.GetAllWithPagination(pageNumber, pageSize);
+
+            var categoriesResultDto = _mapper.Map<PagedResponseDto<CategoryResultDto>>(paginatedCategories);
+
+            return Ok(categoriesResultDto);
         }
 
         [HttpGet("{id:int}")]

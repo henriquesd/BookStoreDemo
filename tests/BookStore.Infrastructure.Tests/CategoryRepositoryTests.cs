@@ -107,6 +107,66 @@ namespace BookStore.Infrastructure.Tests
             }
         }
 
+        public class GetAllWithPagination : CategoryRepositoryTestsBase
+        {
+            [Fact]
+            public async void ShouldReturnAListOfPaginatedCategory_WhenCategoriesExist()
+            {
+                await using (var context = new BookStoreDbContext(_options))
+                {
+                    // Arrange
+                    var categoryRepository = new CategoryRepository(context);
+
+                    // Act
+                    var pagedResponse = await categoryRepository.GetAllWithPagination(1, 10);
+
+                    // Assert
+                    pagedResponse.Should().NotBeNull();
+                    pagedResponse.Should().BeOfType<PagedResponse<Category>>();
+                }
+            }
+
+            [Fact]
+            public async void ShouldReturnAnEmptyList_WhenCategoriesDoNotExist()
+            {
+                await BookStoreHelperTests.CleanDataBase(_options);
+
+                await using (var context = new BookStoreDbContext(_options))
+                {
+                    // Arrange
+                    var categoryRepository = new CategoryRepository(context);
+
+                    // Act
+                    var pagedResponse = await categoryRepository.GetAllWithPagination(1, 10);
+
+                    // Assert
+                    pagedResponse.Should().NotBeNull();
+                    pagedResponse.Data.Should().BeEmpty();
+                    pagedResponse.Should().BeOfType<PagedResponse<Category>>();
+                }
+            }
+
+            [Fact]
+            public async void ShouldReturnPagedResponseOfCategoryWithCorrectValues_WhenCategoriesExist()
+            {
+                await using (var context = new BookStoreDbContext(_options))
+                {
+                    // Arrange
+                    var expectedCategories = CreateCategoryList();
+                    var categoryRepository = new CategoryRepository(context);
+
+                    // Act
+                    var pagedResponse = await categoryRepository.GetAllWithPagination(1, 10);
+
+                    // Assert
+                    pagedResponse.Should().NotBeNull();
+                    pagedResponse.Should().BeOfType<PagedResponse<Category>>();
+                    pagedResponse.Data.Count().Should().Be(3);
+                    pagedResponse.Data.Should().BeEquivalentTo(expectedCategories);
+                }
+            }
+        }
+
         public class GetById : CategoryRepositoryTestsBase
         {
             [Fact]

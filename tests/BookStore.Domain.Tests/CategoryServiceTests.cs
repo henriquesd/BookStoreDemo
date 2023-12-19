@@ -50,8 +50,7 @@ namespace BookStore.Domain.Tests
             public async void ShouldReturnNull_WhenCategoriesDoNotExist()
             {
                 // Arrange
-                _categoryRepositoryMock.Setup(c =>
-                    c.GetAll()).ReturnsAsync((List<Category>)null);
+                _categoryRepositoryMock.Setup(c => c.GetAll()).ReturnsAsync((List<Category>)null);
 
                 // Act
                 var result = await _categoryService.GetAll();
@@ -72,6 +71,64 @@ namespace BookStore.Domain.Tests
 
                 // Assert
                 _categoryRepositoryMock.Verify(mock => mock.GetAll(), Times.Once);
+            }
+        }
+
+        public class GetAllWithPagination : CategoryServiceTestsBase
+        {
+            [Fact]
+            public async void ShouldReturnAPagedResponseOfCategories_WhenCategoriesExist()
+            {
+                // Arrange
+                var categories = _fixture.Build<Category>()
+                    .CreateMany()
+                    .ToList();
+                var pagedResponse = _fixture.Build<PagedResponse<Category>>()
+                    .With(p => p.Data, categories)
+                    .Create();
+
+                _categoryRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+
+                // Act
+                var result = await _categoryService.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>());
+
+                // Assert
+                result.Should().NotBeNull();
+                result.Should().BeOfType<PagedResponse<Category>>();
+            }
+
+            [Fact]
+            public async void ShouldReturnNull_WhenCategoriesDoNotExist()
+            {
+                // Arrange
+                var pagedResponse = _fixture.Build<PagedResponse<Category>>()
+                    .Without(p => p.Data)
+                    .Do(p => p.Data = new List<Category>())
+                    .Create();
+
+                _categoryRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+
+                // Act
+                var result = await _categoryService.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>());
+
+                // Assert
+                result.Should().NotBeNull();
+                result.Data.Should().BeEmpty();
+            }
+
+            [Fact]
+            public async void ShouldCallGetAllFromRepository_OnlyOnce()
+            {
+                // Arrange
+                var pagedResponse = _fixture.Create<PagedResponse<Category>>();
+
+                _categoryRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+
+                // Act
+                var result = await _categoryService.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>());
+
+                // Assert
+                _categoryRepositoryMock.Verify(mock => mock.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
             }
         }
 
