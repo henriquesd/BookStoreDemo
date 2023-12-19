@@ -123,7 +123,7 @@ namespace BookStore.API.Tests
         public class GetAll : BooksControllerTestsBase
         {
             [Fact]
-            public async void ShouldReturnOk_WhenExistBooks()
+            public async void ShouldReturnOk_WhenBooksExist()
             {
                 // Arrange
                 var books = CreateBookList();
@@ -177,7 +177,7 @@ namespace BookStore.API.Tests
         public class GetAllWithPagination : BooksControllerTestsBase
         {
             [Fact]
-            public async void ShouldReturnOk_WhenExistBooks()
+            public async void ShouldReturnOk_WhenBooksExist()
             {
                 // Arrange
                 var books = _fixture.Build<Book>()

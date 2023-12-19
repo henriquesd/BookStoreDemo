@@ -34,7 +34,7 @@ namespace BookStore.API.Tests
         public class GetAll : CategoriesControllerTestsBase
         {
             [Fact]
-            public async void ShouldReturnOk_WhenExistCategory()
+            public async void ShouldReturnOk_WhenCategoriesExist()
             {
                 // Arrange
                 var categories = _fixture.Build<Category>()
@@ -90,7 +90,7 @@ namespace BookStore.API.Tests
         public class GetAllWithPagination : CategoriesControllerTestsBase
         {
             [Fact]
-            public async void ShouldReturnOk_WhenExistCategory()
+            public async void ShouldReturnOk_WhenCategoriesExist()
             {
                 // Arrange
                 var categories = _fixture.Build<Category>()

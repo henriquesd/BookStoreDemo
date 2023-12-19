@@ -141,7 +141,7 @@ namespace BookStore.Infrastructure.Tests
         public class GetAllWithPagination : BookRepositoryTestsBase
         {
             [Fact]
-            public async void ShouldReturnAListOfPaginatedBook_WhenCategoriesExist()
+            public async void ShouldReturnAListOfPaginatedBook_WhenBooksExist()
             {
                 await using (var context = new BookStoreDbContext(_options))
                 {
