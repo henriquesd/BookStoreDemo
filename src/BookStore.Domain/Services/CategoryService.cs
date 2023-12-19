@@ -80,6 +80,6 @@ namespace BookStore.Domain.Services
         public void Dispose()
         {
             _categoryRepository?.Dispose();
-        }        
+        }
     }
 }

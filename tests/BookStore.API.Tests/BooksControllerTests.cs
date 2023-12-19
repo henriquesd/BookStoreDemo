@@ -3,7 +3,6 @@ using AutoMapper;
 using BookStore.API.Controllers;
 using BookStore.API.Dtos;
 using BookStore.API.Dtos.Book;
-using BookStore.API.Dtos.Category;
 using BookStore.API.Tests.Helpers;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
@@ -192,7 +191,7 @@ namespace BookStore.API.Tests
                     .Create();
 
                 _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
-                _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Category>>())).Returns(pagedResponseDto);
+                _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Book>>())).Returns(pagedResponseDto);
 
 
                 // Act
@@ -214,7 +213,7 @@ namespace BookStore.API.Tests
                     .Create();
 
                 _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
-                _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Category>>())).Returns(pagedResponseDto);
+                _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Book>>())).Returns(pagedResponseDto);
 
                 // Act
                 var result = await _booksController.GetAllWithPagination();
