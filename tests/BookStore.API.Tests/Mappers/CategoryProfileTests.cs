@@ -67,6 +67,25 @@ namespace BookStore.API.Tests.Mappers
                     destination.Name.Should().Be(source.Name);
                 }
             }
+
+            public class OperationResultCategory_To_OperationResultCategoryResultDto : CategoryProfileTestsBase
+            {
+                [Fact]
+                public void ShouldMapCorrectly()
+                {
+                    // Arrange
+                    var source = _fixture.Create<OperationResult<Category>>();
+
+                    // Act
+                    var destination = _mapper.Map<OperationResult<Category>>(source);
+
+                    // Assert
+                    destination.Should().NotBeNull();
+                    destination.Success.Should().Be(source.Success);
+                    destination.Payload.Id.Should().Be(source.Payload.Id);
+                    destination.Payload.Name.Should().Be(source.Payload.Name);
+                }
+            }
         }
     }
 }

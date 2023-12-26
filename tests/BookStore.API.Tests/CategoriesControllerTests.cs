@@ -237,16 +237,20 @@ namespace BookStore.API.Tests
                     .With(p => p.Name, category.Name)
                     .Create();
                 var categoryResultDto = _fixture.Create<CategoryResultDto>();
+                var operationResultCategoryResultDto = _fixture.Build<OperationResult<CategoryResultDto>>()
+                    .With(p => p.Success, true)
+                    .With(p => p.Payload, categoryResultDto)
+                    .Create();
 
                 _mapperMock.Setup(m => m.Map<Category>(It.IsAny<CategoryAddDto>())).Returns(category);
                 _categoryServiceMock.Setup(c => c.Add(category)).ReturnsAsync(categoryResult);
-                _mapperMock.Setup(m => m.Map<CategoryResultDto>(It.IsAny<Category>())).Returns(categoryResultDto);
+                _mapperMock.Setup(m => m.Map<OperationResult<CategoryResultDto>>(It.IsAny<OperationResult<Category>>())).Returns(operationResultCategoryResultDto);
 
                 // Act
                 var result = await _categoriesController.Add(categoryAddDto);
 
                 // Assert
-                result.Should().BeOfType<OkObjectResult>();
+                result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(operationResultCategoryResultDto);
             }
 
             [Fact]
@@ -272,11 +276,13 @@ namespace BookStore.API.Tests
                     .With(p => p.Payload, category)
                     .Create();
                 var categoryAddDto = _fixture.Build<CategoryAddDto>()
-                   .With(p => p.Name, category.Name)
-                   .Create();
+                    .With(p => p.Name, category.Name)
+                    .Create();
+                var operationResultCategoryResultDto = _fixture.Create<OperationResult<CategoryResultDto>>();
 
                 _mapperMock.Setup(m => m.Map<Category>(It.IsAny<CategoryAddDto>())).Returns(category);
                 _categoryServiceMock.Setup(c => c.Add(category)).ReturnsAsync(categoryResult);
+                _mapperMock.Setup(m => m.Map<OperationResult<CategoryResultDto>>(It.IsAny<OperationResult<Category>>())).Returns(operationResultCategoryResultDto);
 
                 // Act
                 await _categoriesController.Add(categoryAddDto);
@@ -300,16 +306,22 @@ namespace BookStore.API.Tests
                     .With(p => p.Id, category.Id)
                     .With(p => p.Name, "NameUpdated")
                     .Create();
+                var categoryResultDto = _fixture.Create<CategoryResultDto>();
+                var operationResultCategoryResultDto = _fixture.Build<OperationResult<CategoryResultDto>>()
+                    .With(p => p.Success, true)
+                    .With(p => p.Payload, categoryResultDto)
+                    .Create();
 
                 _mapperMock.Setup(m => m.Map<Category>(It.IsAny<CategoryEditDto>())).Returns(category);
                 _categoryServiceMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
                 _categoryServiceMock.Setup(c => c.Update(category)).ReturnsAsync(categoryResult);
+                _mapperMock.Setup(m => m.Map<OperationResult<CategoryResultDto>>(It.IsAny<OperationResult<Category>>())).Returns(operationResultCategoryResultDto);
 
                 // Act
                 var result = await _categoriesController.Update(categoryEditDto.Id, categoryEditDto);
 
                 // Assert
-                result.Should().BeOfType<OkObjectResult>();
+                result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(operationResultCategoryResultDto);
             }
 
             [Fact]
@@ -324,10 +336,12 @@ namespace BookStore.API.Tests
                    .With(p => p.Id, category.Id)
                    .With(p => p.Name, "NameUpdated")
                    .Create();
+                var operationResultCategoryResultDto = _fixture.Create<OperationResult<CategoryResultDto>>();
 
                 _mapperMock.Setup(m => m.Map<Category>(It.IsAny<CategoryEditDto>())).Returns(category);
                 _categoryServiceMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
                 _categoryServiceMock.Setup(c => c.Update(category)).ReturnsAsync(categoryResult);
+                _mapperMock.Setup(m => m.Map<OperationResult<CategoryResultDto>>(It.IsAny<OperationResult<Category>>())).Returns(operationResultCategoryResultDto);
 
                 // Act
                 await _categoriesController.Update(categoryEditDto.Id, categoryEditDto);

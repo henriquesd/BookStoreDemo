@@ -60,14 +60,16 @@ namespace BookStore.API.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(OperationResult<CategoryResultDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(OperationResult<CategoryResultDto>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Add(CategoryAddDto categoryDto)
         {
             if (!ModelState.IsValid) return BadRequest();
 
             var category = _mapper.Map<Category>(categoryDto);
-            var result = await _categoryService.Add(category);
+            var categoryResult = await _categoryService.Add(category);
+            
+            var result = _mapper.Map<OperationResult<CategoryResultDto>>(categoryResult);
 
             if (!result.Success) return BadRequest(result);
 
@@ -84,7 +86,9 @@ namespace BookStore.API.Controllers
 
             var category = _mapper.Map<Category>(categoryDto);
             
-            var result = await _categoryService.Update(category);
+            var categoryResult = await _categoryService.Update(category);
+
+            var result = _mapper.Map<OperationResult<CategoryResultDto>>(categoryResult);
 
             if (!result.Success) return BadRequest(result);
 

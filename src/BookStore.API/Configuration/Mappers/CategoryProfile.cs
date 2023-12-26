@@ -12,7 +12,9 @@ namespace BookStore.API.Configuration.Mappers
             CreateMap<Category, CategoryAddDto>().ReverseMap();
             CreateMap<Category, CategoryEditDto>().ReverseMap();
             CreateMap<Category, CategoryResultDto>().ReverseMap();
-        
+
+            CreateMap<OperationResult<Category>, OperationResult<CategoryResultDto>>().ReverseMap();
+
             CreateMap<PagedResponse<Category>, PagedResponseDto<CategoryResultDto>>()
                 .ForMember(dest => dest.Data, opt => opt.MapFrom(src => src.Data));
         }
