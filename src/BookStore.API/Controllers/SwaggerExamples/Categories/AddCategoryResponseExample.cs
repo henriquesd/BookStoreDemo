@@ -6,9 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 namespace BookStore.API.Controllers.SwaggerExamples.Categories
 {
     [ExcludeFromCodeCoverage]
-    public class AddCategoryResponseExample : IMultipleExamplesProvider<OperationResult<CategoryResultDto>>
+    public class AddCategoryResponseExample : IExamplesProvider<OperationResult<CategoryResultDto>>
     {
-        public IEnumerable<SwaggerExample<OperationResult<CategoryResultDto>>> GetExamples()
+        public OperationResult<CategoryResultDto> GetExamples()
         {
             var payload = new CategoryResultDto
             {
@@ -16,9 +16,7 @@ namespace BookStore.API.Controllers.SwaggerExamples.Categories
                 Name = "Category name"
             };
 
-            yield return SwaggerExample.Create(ExampleConstants.SuccessfulResponse, new OperationResult<CategoryResultDto>(payload));
-
-            yield return SwaggerExample.Create(ExampleConstants.FailedResponse, new OperationResult<CategoryResultDto>(payload, false, "This category name is already being used"));
+            return new OperationResult<CategoryResultDto>(payload);
         }
     }
 }
