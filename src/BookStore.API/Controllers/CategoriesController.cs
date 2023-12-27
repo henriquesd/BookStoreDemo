@@ -96,7 +96,7 @@ namespace BookStore.API.Controllers
         }
 
         [HttpDelete("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Remove(int id)
         {
@@ -107,7 +107,7 @@ namespace BookStore.API.Controllers
 
             if (!result) return BadRequest();
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpGet]

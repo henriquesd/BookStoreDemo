@@ -381,7 +381,7 @@ namespace BookStore.API.Tests
         public class Remove : CategoriesControllerTestsBase
         {
             [Fact]
-            public async void ShouldReturnOk_WhenCategoryIsRemoved()
+            public async void ShouldReturnNoContent_WhenCategoryIsRemoved()
             {
                 // Arrange
                 var category = _fixture.Create<Category>();
@@ -393,7 +393,7 @@ namespace BookStore.API.Tests
                 var result = await _categoriesController.Remove(category.Id);
 
                 // Assert
-                result.Should().BeOfType<OkResult>();
+                result.Should().BeOfType<NoContentResult>();
             }
 
             [Fact]
