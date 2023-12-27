@@ -2,6 +2,8 @@ using BookStore.API.Configuration;
 using BookStore.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.Filters;
+using System.Reflection;
 
 namespace BookStore.API
 {
@@ -34,6 +36,9 @@ namespace BookStore.API
                     Version = "v1"
                 });
             });
+            
+            services.ConfigureSwaggerGen(options => options.ExampleFilters());
+            services.AddSwaggerExamplesFromAssemblies(Assembly.GetEntryAssembly());
 
             services.AddCors();
 
