@@ -1,12 +1,12 @@
 ﻿namespace BookStore.Domain.Models
 {
-    public class PagedResponse<T>
+    public record struct PagedResponse<T>
     {
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-        public int TotalPages { get; set; }
-        public int TotalRecords { get; set; }
-        public List<T> Data { get; set; }
+        public int PageNumber { get; init; }
+        public int PageSize { get; init; }
+        public int TotalPages { get; init; }
+        public int TotalRecords { get; init; }
+        public List<T> Data { get; init; }
 
         public PagedResponse(List<T> data, int pageNumber, int totalItems, int pageSize)
         {
