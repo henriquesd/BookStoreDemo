@@ -147,9 +147,11 @@ namespace BookStore.Domain.Tests
             public async void ShouldReturnAnEmptyList_WhenBooksDoNotExist()
             {
                 // Arrange
+                var listBooks = new List<Book>();
+
                 var pagedResponse = _fixture.Build<PagedResponse<Book>>()
                     .Without(p => p.Data)
-                    .Do(p => p.Data = new List<Book>())
+                    .With(p => p.Data, listBooks)
                     .Create();
 
                 _bookRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);

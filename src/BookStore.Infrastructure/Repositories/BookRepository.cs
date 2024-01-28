@@ -18,7 +18,7 @@ namespace BookStore.Infrastructure.Repositories
 
         public async Task<PagedResponse<Book>> GetAllWithPagination(int pageNumber, int pageSize)
         {
-            var totalItems = await Db.Books.AsNoTracking().CountAsync();
+            var totalRecords = await Db.Books.AsNoTracking().CountAsync();
 
             var books = await Db.Books.AsNoTracking()
                 .Include(b => b.Category)
@@ -26,7 +26,7 @@ namespace BookStore.Infrastructure.Repositories
                 .Take(pageSize)
                 .ToListAsync();
 
-            var pagedResponse = new PagedResponse<Book>(books, pageNumber, totalItems, pageSize);
+            var pagedResponse = new PagedResponse<Book>(books, pageNumber, pageSize, totalRecords);
 
             return pagedResponse;
         }

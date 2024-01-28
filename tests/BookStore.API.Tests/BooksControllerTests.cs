@@ -3,6 +3,7 @@ using AutoMapper;
 using BookStore.API.Controllers;
 using BookStore.API.Dtos;
 using BookStore.API.Dtos.Book;
+using BookStore.API.Dtos.Category;
 using BookStore.API.Tests.Helpers;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
@@ -10,6 +11,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BookStore.API.Tests
 {
@@ -183,12 +185,21 @@ namespace BookStore.API.Tests
                 var books = _fixture.Build<Book>()
                    .CreateMany()
                    .ToList();
+
                 var pagedResponse = _fixture.Build<PagedResponse<Book>>()
                     .With(p => p.Data, books)
                     .Create();
-                var pagedResponseDto = _fixture.Build<PagedResponseDto<BookResultDto>>()
-                    .With(p => p.Data, _fixture.Build<BookResultDto>().CreateMany().ToList())
-                    .Create();
+
+                var listBookResultDto = _fixture.Build<BookResultDto>().CreateMany().ToList();
+
+                var pagedResponseDto = new PagedResponseDto<BookResultDto>
+                {
+                    Data = listBookResultDto,
+                    PageNumber = 1,
+                    PageSize = 10,
+                    TotalRecords = 1,
+                    TotalPages = 1
+                };
 
                 _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
                 _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Book>>())).Returns(pagedResponseDto);
@@ -208,9 +219,17 @@ namespace BookStore.API.Tests
                 var pagedResponse = _fixture.Build<PagedResponse<Book>>()
                     .Without(p => p.Data)
                     .Create();
-                var pagedResponseDto = _fixture.Build<PagedResponseDto<BookResultDto>>()
-                    .Without(p => p.Data)
-                    .Create();
+
+                var listBookResultDto = _fixture.Build<BookResultDto>().CreateMany().ToList();
+                
+                var pagedResponseDto = new PagedResponseDto<BookResultDto>
+                {
+                    Data = null,
+                    PageNumber = 1,
+                    PageSize = 10,
+                    TotalRecords = 1,
+                    TotalPages = 1
+                };
 
                 _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
                 _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Book>>())).Returns(pagedResponseDto);
@@ -229,12 +248,21 @@ namespace BookStore.API.Tests
                 var books = _fixture.Build<Book>()
                     .CreateMany()
                     .ToList();
+
                 var pagedResponse = _fixture.Build<PagedResponse<Book>>()
                     .With(p => p.Data, books)
                     .Create();
-                var pagedResponseDto = _fixture.Build<PagedResponseDto<BookResultDto>>()
-                    .With(p => p.Data, _fixture.Build<BookResultDto>().CreateMany().ToList())
-                    .Create();
+
+                var listBookResultDto = _fixture.Build<BookResultDto>().CreateMany().ToList();
+
+                var pagedResponseDto = new PagedResponseDto<BookResultDto>
+                {
+                    Data = listBookResultDto,
+                    PageNumber = 1,
+                    PageSize = 10,
+                    TotalRecords = 1,
+                    TotalPages = 1
+                };
 
                 _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
                 _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Book>>())).Returns(pagedResponseDto);
