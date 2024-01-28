@@ -101,9 +101,11 @@ namespace BookStore.Domain.Tests
             public async void ShouldReturnNull_WhenCategoriesDoNotExist()
             {
                 // Arrange
+                var listCategories = new List<Category>();
+
                 var pagedResponse = _fixture.Build<PagedResponse<Category>>()
                     .Without(p => p.Data)
-                    .Do(p => p.Data = new List<Category>())
+                    .With(p => p.Data, listCategories)
                     .Create();
 
                 _categoryRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);

@@ -31,14 +31,14 @@ namespace BookStore.Infrastructure.Repositories
 
         public virtual async Task<PagedResponse<TEntity>> GetAllWithPagination(int pageNumber, int pageSize)
         {
-            var totalItems = await Db.Set<TEntity>().AsNoTracking().CountAsync();
+            var totalRecords = await Db.Set<TEntity>().AsNoTracking().CountAsync();
 
             var entities = await Db.Set<TEntity>().AsNoTracking()
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            var pagedResponse = new PagedResponse<TEntity>(entities, pageNumber, totalItems, pageSize);
+            var pagedResponse = new PagedResponse<TEntity>(entities, pageNumber, pageSize, totalRecords);
 
             return pagedResponse;
         }

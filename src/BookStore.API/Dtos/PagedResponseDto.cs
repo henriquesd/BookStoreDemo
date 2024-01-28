@@ -1,11 +1,11 @@
 ﻿namespace BookStore.API.Dtos
 {
-    public record struct PagedResponseDto<T>
+    public readonly record struct PagedResponseDto<T>
     {
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-        public int TotalPages { get; set; }
-        public int TotalRecords { get; set; }
-        public List<T> Data { get; set; }
+        public int PageNumber { get; init; }
+        public int PageSize { get; init; }
+        public int TotalPages { get; init; }
+        public int TotalRecords { get; init; }
+        public List<T> Data { get; init; }
     }
 }
