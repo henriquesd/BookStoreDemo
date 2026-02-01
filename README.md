@@ -2,7 +2,7 @@
 Web API Project using .NET 8.0
 
 ## Technologies
-- .NET 8
+- .NET 10
 - Entity Framework 8
 - Fluent API
 - AutoMapper
@@ -27,3 +27,8 @@ Web API Project using .NET 8.0
     - Services
   - Infrastructure layer
     - Repository Pattern
+
+# Commands
+
+## Run migration
+`dotnet ef database update --project src/BookStore.Infrastructure --startup-project src/BookStore.API`
