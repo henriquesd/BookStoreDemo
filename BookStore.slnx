@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BookStore.API.Tests/BookStore.API.Tests.csproj" />
+    <Project Path="tests/BookStore.Domain.Tests/BookStore.Domain.Tests.csproj" />
+    <Project Path="tests/BookStore.Infrastructure.Tests/BookStore.Infrastructure.Tests.csproj" />
+  </Folder>
+  <Project Path="src/BookStore.API/BookStore.API.csproj" />
+  <Project Path="src/BookStore.Domain/BookStore.Domain.csproj" />
+  <Project Path="src/BookStore.Infrastructure/BookStore.Infrastructure.csproj" />
+</Solution>
