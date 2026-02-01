@@ -1,9 +1,9 @@
 # BookStore
-Web API Project using .NET 8.0
+Web API Project using .NET 10
 
 ## Technologies
 - .NET 10
-- Entity Framework 8
+- Entity Framework Core
 - Fluent API
 - AutoMapper
 - Swagger
