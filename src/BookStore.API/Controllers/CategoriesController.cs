@@ -1,6 +1,6 @@
-﻿using AutoMapper;
-using BookStore.API.Dtos;
+﻿using BookStore.API.Dtos;
 using BookStore.API.Dtos.Category;
+using BookStore.API.Mappings;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -11,12 +11,9 @@ namespace BookStore.API.Controllers
     public class CategoriesController : MainController
     {
         private readonly ICategoryService _categoryService;
-        private readonly IMapper _mapper;
 
-        public CategoriesController(IMapper mapper,
-            ICategoryService categoryService)
+        public CategoriesController(ICategoryService categoryService)
         {
-            _mapper = mapper;
             _categoryService = categoryService;
         }
 
@@ -26,13 +23,14 @@ namespace BookStore.API.Controllers
         {
             var categories = await _categoryService.GetAll();
 
-            var categoryResultDtoList = _mapper.Map<IEnumerable<CategoryResultDto>>(categories);
+            var categoryResultDtoList = categories.ToDto();
 
             return Ok(categoryResultDtoList);
         }
 
         [HttpGet("GetAllWithPagination")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
         {
             if (pageNumber <= 0 || pageSize <= 0)
@@ -42,7 +40,7 @@ namespace BookStore.API.Controllers
 
             var paginatedCategories = await _categoryService.GetAllWithPagination(pageNumber, pageSize);
 
-            var categoriesResultDto = _mapper.Map<PagedResponseDto<CategoryResultDto>>(paginatedCategories);
+            var categoriesResultDto = paginatedCategories.ToDto(c => c.ToDto());
 
             return Ok(categoriesResultDto);
         }
@@ -59,7 +57,7 @@ namespace BookStore.API.Controllers
                 return NotFound();
             }
 
-            var categoryResultDto = _mapper.Map<CategoryResultDto>(category);
+            var categoryResultDto = category.ToDto();
 
             return Ok(categoryResultDto);
         }
@@ -74,10 +72,10 @@ namespace BookStore.API.Controllers
                 return BadRequest();
             }
 
-            var category = _mapper.Map<Category>(categoryDto);
+            var category = categoryDto.ToModel();
             var categoryResult = await _categoryService.Add(category);
 
-            var result = _mapper.Map<OperationResult<CategoryResultDto>>(categoryResult);
+            var result = categoryResult.ToDto();
 
             if (!result.Success)
             {
@@ -102,11 +100,11 @@ namespace BookStore.API.Controllers
                 return BadRequest();
             }
 
-            var category = _mapper.Map<Category>(categoryDto);
+            var category = categoryDto.ToModel();
 
             var categoryResult = await _categoryService.Update(category);
 
-            var result = _mapper.Map<OperationResult<CategoryResultDto>>(categoryResult);
+            var result = categoryResult.ToDto();
 
             if (!result.Success)
             {
@@ -153,7 +151,7 @@ namespace BookStore.API.Controllers
                 return NotFound(new { message = "No categories were found" });
             }
 
-            return Ok(_mapper.Map<IEnumerable<CategoryResultDto>>(categories));
+            return Ok(categories.ToDto());
         }
     }
 }

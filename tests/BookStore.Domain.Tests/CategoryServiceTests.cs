@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using BookStore.Domain.Services;
@@ -11,440 +11,334 @@ namespace BookStore.Domain.Tests
 {
     public class CategoryServiceTests
     {
-        public abstract class CategoryServiceTestsBase
-        {
-            protected readonly Fixture _fixture;
-            protected readonly Mock<ICategoryRepository> _categoryRepositoryMock;
-            protected readonly Mock<IBookService> _bookService;
-            protected readonly CategoryService _categoryService;
+        private readonly Fixture _fixture;
+        private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
+        private readonly Mock<IBookService> _bookServiceMock;
+        private readonly CategoryService _service;
 
-            protected CategoryServiceTestsBase()
-            {
-                _fixture = FixtureFactory.Create();
-                _categoryRepositoryMock = new Mock<ICategoryRepository>();
-                _bookService = new Mock<IBookService>();
-                _categoryService = new CategoryService(_categoryRepositoryMock.Object, _bookService.Object);
-            }
+        public CategoryServiceTests()
+        {
+            _fixture = FixtureFactory.Create();
+            _categoryRepositoryMock = new Mock<ICategoryRepository>();
+            _bookServiceMock = new Mock<IBookService>();
+            _service = new CategoryService(_categoryRepositoryMock.Object, _bookServiceMock.Object);
         }
 
-        public class GetAll : CategoryServiceTestsBase
+        [Fact]
+        public async Task GetAll_ShouldReturnListOfCategories_WhenCategoriesExist()
         {
-            [Fact]
-            public async void ShouldReturnAListOfCategories_WhenCategoriesExist()
-            {
-                // Arrange
-                var categories = _fixture.Create<List<Category>>();
+            var categories = _fixture.CreateMany<Category>(3).ToList();
+            _categoryRepositoryMock.Setup(r => r.GetAll()).ReturnsAsync(categories);
 
-                _categoryRepositoryMock.Setup(c =>
-                    c.GetAll()).ReturnsAsync(categories);
+            var result = await _service.GetAll();
 
-                // Act
-                var result = await _categoryService.GetAll();
-
-                // Assert
-                result.Should().NotBeNull();
-                result.Should().BeOfType<List<Category>>();
-            }
-
-            [Fact]
-            public async void ShouldReturnNull_WhenCategoriesDoNotExist()
-            {
-                // Arrange
-                _categoryRepositoryMock.Setup(c => c.GetAll()).ReturnsAsync((List<Category>)null);
-
-                // Act
-                var result = await _categoryService.GetAll();
-
-                // Assert
-                result.Should().BeNull();
-            }
-
-            [Fact]
-            public async void ShouldCallGetAllFromRepository_OnlyOnce()
-            {
-                // Arrange
-                _categoryRepositoryMock.Setup(c =>
-                    c.GetAll()).ReturnsAsync((List<Category>)null);
-
-                // Act
-                await _categoryService.GetAll();
-
-                // Assert
-                _categoryRepositoryMock.Verify(mock => mock.GetAll(), Times.Once);
-            }
+            result.Should().NotBeNull();
+            result.Should().BeOfType<List<Category>>();
+            result.Should().HaveCount(3);
         }
 
-        public class GetAllWithPagination : CategoryServiceTestsBase
+        [Fact]
+        public async Task GetAll_ShouldReturnNull_WhenCategoriesDoNotExist()
         {
-            [Fact]
-            public async void ShouldReturnAPagedResponseOfCategories_WhenCategoriesExist()
-            {
-                // Arrange
-                var categories = _fixture.Build<Category>()
-                    .CreateMany()
-                    .ToList();
-                var pagedResponse = _fixture.Build<PagedResponse<Category>>()
-                    .With(p => p.Data, categories)
-                    .Create();
+            _categoryRepositoryMock.Setup(r => r.GetAll()).ReturnsAsync((List<Category>)null);
 
-                _categoryRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+            var result = await _service.GetAll();
 
-                // Act
-                var result = await _categoryService.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>());
-
-                // Assert
-                result.Should().NotBeNull();
-                result.Should().BeOfType<PagedResponse<Category>>();
-            }
-
-            [Fact]
-            public async void ShouldReturnNull_WhenCategoriesDoNotExist()
-            {
-                // Arrange
-                var listCategories = new List<Category>();
-
-                var pagedResponse = _fixture.Build<PagedResponse<Category>>()
-                    .Without(p => p.Data)
-                    .With(p => p.Data, listCategories)
-                    .Create();
-
-                _categoryRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
-
-                // Act
-                var result = await _categoryService.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>());
-
-                // Assert
-                result.Should().NotBeNull();
-                result.Data.Should().BeEmpty();
-            }
-
-            [Fact]
-            public async void ShouldCallGetAllFromRepository_OnlyOnce()
-            {
-                // Arrange
-                var pagedResponse = _fixture.Create<PagedResponse<Category>>();
-
-                _categoryRepositoryMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
-
-                // Act
-                var result = await _categoryService.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>());
-
-                // Assert
-                _categoryRepositoryMock.Verify(mock => mock.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
-            }
+            result.Should().BeNull();
         }
 
-        public class GetById : CategoryServiceTestsBase
+        [Fact]
+        public async Task GetAll_ShouldCallRepositoryOnce_WhenCalled()
         {
-            [Fact]
-            public async void ShouldReturnCategory_WhenCategoryExist()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
+            _categoryRepositoryMock.Setup(r => r.GetAll()).ReturnsAsync((List<Category>)null);
 
-                _categoryRepositoryMock.Setup(c =>
-                    c.GetById(category.Id)).ReturnsAsync(category);
+            await _service.GetAll();
 
-                // Act
-                var result = await _categoryService.GetById(category.Id);
-
-                // Assert
-                result.Should().NotBeNull();
-                result.Should().BeOfType<Category>();
-            }
-
-            [Fact]
-            public async void ShouldReturnNull_WhenCategoryDoesNotExist()
-            {
-                // Arrange
-                _categoryRepositoryMock.Setup(c =>
-                    c.GetById(1)).ReturnsAsync((Category)null);
-
-                // Act
-                var result = await _categoryService.GetById(1);
-
-                // Assert
-                result.Should().BeNull();
-            }
-
-            [Fact]
-            public async void ShouldCallGetByIdFromRepository_OnlyOnce()
-            {
-                // Assert
-                _categoryRepositoryMock.Setup(c =>
-                    c.GetById(1)).ReturnsAsync((Category)null);
-
-                // Act
-                await _categoryService.GetById(1);
-
-                // Assert
-                _categoryRepositoryMock.Verify(mock => mock.GetById(1), Times.Once);
-            }
+            _categoryRepositoryMock.Verify(r => r.GetAll(), Times.Once);
         }
 
-        public class Add : CategoryServiceTestsBase
+        [Theory]
+        [InlineData(1, 10)]
+        [InlineData(2, 5)]
+        [InlineData(1, 20)]
+        public async Task GetAllWithPagination_ShouldReturnPagedResponse_WhenCategoriesExist(int pageNumber, int pageSize)
         {
-            [Fact]
-            public async void ShouldAddCategory_WhenCategoryNameDoesNotExist()
-            {
-                // Assert
-                var category = _fixture.Create<Category>();
+            var categories = _fixture.CreateMany<Category>(5).ToList();
+            var pagedResponse = new PagedResponse<Category>(categories, pageNumber, pageSize, categories.Count);
+            _categoryRepositoryMock.Setup(r => r.GetAllWithPagination(pageNumber, pageSize)).ReturnsAsync(pagedResponse);
 
-                _categoryRepositoryMock.Setup(c =>
-                    c.Search(c => c.Name == category.Name))
-                    .ReturnsAsync(new List<Category>());
-                _categoryRepositoryMock.Setup(c => c.Add(category));
+            var result = await _service.GetAllWithPagination(pageNumber, pageSize);
 
-                // Act
-                var result = await _categoryService.Add(category);
-
-                // Assert
-                result.Should().NotBeNull();
-                result.Should().BeOfType<OperationResult<Category>>();
-                result.Success.Should().BeTrue();
-            }
-
-            [Fact]
-            public async void ShouldNotAddCategory_WhenCategoryNameAlreadyExist()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
-                var categoryList = _fixture.Create<List<Category>>();
-
-                _categoryRepositoryMock.Setup(c =>
-                    c.Search(c => c.Name == category.Name)).ReturnsAsync(categoryList);
-
-                // Act
-                var result = await _categoryService.Add(category);
-
-                // Assert
-                result.Should().NotBeNull();
-                result.Success.Should().BeFalse();
-            }
-
-            [Fact]
-            public async void ShouldCallAddFromRepository_OnlyOnce()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
-
-                _categoryRepositoryMock.Setup(c =>
-                        c.Search(c => c.Name == category.Name))
-                    .ReturnsAsync(new List<Category>());
-                _categoryRepositoryMock.Setup(c => c.Add(category));
-
-                // Act
-                await _categoryService.Add(category);
-
-                // Assert
-                _categoryRepositoryMock.Verify(mock => mock.Add(category), Times.Once);
-            }
+            result.Should().NotBeNull();
+            result.Should().BeOfType<PagedResponse<Category>>();
+            result.Data.Should().HaveCount(5);
         }
 
-        public class Update : CategoryServiceTestsBase
+        [Fact]
+        public async Task GetAllWithPagination_ShouldReturnEmptyList_WhenCategoriesDoNotExist()
         {
-            [Fact]
-            public async void ShouldUpdateCategory_WhenCategoryNameDoesNotExist()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
+            var pagedResponse = new PagedResponse<Category>(new List<Category>(), 1, 10, 0);
+            _categoryRepositoryMock.Setup(r => r.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
 
-                _categoryRepositoryMock.Setup(c =>
-                    c.Search(c => c.Name == category.Name && c.Id != category.Id))
-                    .ReturnsAsync(new List<Category>());
-                _categoryRepositoryMock.Setup(c => c.GetByIdAsNoTracking(category.Id))
-                    .ReturnsAsync(category);
-                _categoryRepositoryMock.Setup(c => c.Update(category));
+            var result = await _service.GetAllWithPagination(1, 10);
 
-                // Act
-                var result = await _categoryService.Update(category);
-
-                // Assert
-                result.Should().NotBeNull();
-                result.Success.Should().BeTrue();
-                result.Payload.Should().NotBeNull();
-                result.Should().BeOfType<OperationResult<Category>>();
-            }
-
-            [Fact]
-            public async void ShouldNotUpdateCategory_WhenCategoryDoesNotExist()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
-                var categoryList = _fixture.CreateMany<Category>();
-
-                _categoryRepositoryMock.Setup(c =>
-                        c.Search(c => c.Name == category.Name && c.Id != category.Id))
-                    .ReturnsAsync(categoryList);
-                _categoryRepositoryMock.Setup(c => c.GetByIdAsNoTracking(category.Id))
-                    .ReturnsAsync(category);
-
-                // Act
-                var result = await _categoryService.Update(category);
-
-                // Assert
-                result.Should().NotBeNull();
-                result.Success.Should().BeFalse();
-                result.Message.Should().NotBeNullOrEmpty();
-            }
-
-
-            [Fact]
-            public async void ShouldNotUpdateCategory_WhenCategoryNameIsAlreadyBeingUsed()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
-                var categoryList = _fixture.CreateMany<Category>();
-
-                _categoryRepositoryMock.Setup(c =>
-                        c.Search(c => c.Name == category.Name && c.Id != category.Id))
-                    .ReturnsAsync(categoryList);
-                _categoryRepositoryMock.Setup(c => c.GetByIdAsNoTracking(category.Id))
-                    .ReturnsAsync(category);
-
-                // Act
-                var result = await _categoryService.Update(category);
-
-                // Assert
-                result.Should().NotBeNull();
-                result.Success.Should().BeFalse();
-                result.Message.Should().NotBeNullOrEmpty();
-            }
-
-            [Fact]
-            public async void ShouldCallUpdateFromRepository_OnlyOnce()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
-
-                _categoryRepositoryMock.Setup(c =>
-                        c.Search(c => c.Name == category.Name && c.Id != category.Id))
-                    .ReturnsAsync(new List<Category>());
-                _categoryRepositoryMock.Setup(c => c.GetByIdAsNoTracking(category.Id))
-                    .ReturnsAsync(category);
-
-                // Act
-                await _categoryService.Update(category);
-
-                // Assert
-                _categoryRepositoryMock.Verify(mock => mock.Update(category), Times.Once);
-            }
+            result.Should().NotBeNull();
+            result.Data.Should().BeEmpty();
         }
 
-        public class Remove : CategoryServiceTestsBase
+        [Fact]
+        public async Task GetAllWithPagination_ShouldCallRepositoryOnce_WhenCalled()
         {
-            [Fact]
-            public async void ShouldRemoveCategory_WhenCategoryDoNotHaveRelatedBooks()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
+            var pagedResponse = _fixture.Create<PagedResponse<Category>>();
+            _categoryRepositoryMock.Setup(r => r.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
 
-                _categoryRepositoryMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
-                _bookService.Setup(b =>
-                    b.GetBooksByCategory(category.Id)).ReturnsAsync(new List<Book>());
+            await _service.GetAllWithPagination(1, 10);
 
-                // Act
-                var result = await _categoryService.Remove(category.Id);
-
-                // Assert
-                result.Success.Should().BeTrue();
-            }
-
-            [Fact]
-            public async void ShouldNotRemoveCategory_WhenCategoryHasRelatedBooks()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
-
-                var books = _fixture.Build<Book>()
-                    .With(p => p.CategoryId, category.Id)
-                    .CreateMany();
-
-                _categoryRepositoryMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
-                _bookService.Setup(b => b.GetBooksByCategory(category.Id)).ReturnsAsync(books);
-
-                // Act
-                var result = await _categoryService.Remove(category.Id);
-
-                // Assert
-                result.Success.Should().BeFalse();
-                result.Message.Should().Contain("associated books");
-            }
-
-            [Fact]
-            public async void ShouldCallRemoveFromRepository_OnlyOnce()
-            {
-                // Arrange
-                var category = _fixture.Create<Category>();
-
-                _categoryRepositoryMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
-                _bookService.Setup(b =>
-                    b.GetBooksByCategory(category.Id)).ReturnsAsync(new List<Book>());
-
-                // Act
-                await _categoryService.Remove(category.Id);
-
-                // Assert
-                _categoryRepositoryMock.Verify(mock => mock.Remove(category), Times.Once);
-            }
+            _categoryRepositoryMock.Verify(r => r.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
         }
 
-        public class Search : CategoryServiceTestsBase
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        [InlineData(999)]
+        public async Task GetById_ShouldReturnCategory_WhenCategoryExists(int categoryId)
         {
-            [Fact]
-            public async void ShouldReturnAListOfCategory_WhenCategoriesWithSearchedNameExist()
-            {
-                // Arrange
-                var categoryList = _fixture.Create<List<Category>>();
-                var categoryName = _fixture.Create<string>();
+            var category = _fixture.Build<Category>().With(c => c.Id, categoryId).Create();
+            _categoryRepositoryMock.Setup(r => r.GetById(categoryId)).ReturnsAsync(category);
 
-                _categoryRepositoryMock.Setup(c =>
-                    c.Search(c => c.Name.Contains(categoryName)))
-                    .ReturnsAsync(categoryList);
+            var result = await _service.GetById(categoryId);
 
-                // Act
-                var result = await _categoryService.Search(categoryName);
+            result.Should().NotBeNull();
+            result.Should().BeOfType<Category>();
+            result.Id.Should().Be(categoryId);
+        }
 
-                // Assert
-                result.Should().NotBeNull();
-                result.Should().BeOfType<List<Category>>();
-            }
+        [Fact]
+        public async Task GetById_ShouldReturnNull_WhenCategoryDoesNotExist()
+        {
+            _categoryRepositoryMock.Setup(r => r.GetById(It.IsAny<int>())).ReturnsAsync((Category)null);
 
-            [Fact]
-            public async void ShouldReturnNull_WhenCategoriesWithSearchedNameDoNotExist()
-            {
-                // Arrange
-                var searchedCategory = _fixture.Create<Category>();
-                var categoryName = _fixture.Create<string>();
+            var result = await _service.GetById(999);
 
-                _categoryRepositoryMock.Setup(c =>
-                    c.Search(c => c.Name.Contains(categoryName)))
-                    .ReturnsAsync((IEnumerable<Category>)(null));
+            result.Should().BeNull();
+        }
 
-                // Act
-                var result = await _categoryService.Search(categoryName);
+        [Fact]
+        public async Task GetById_ShouldCallRepositoryOnce_WhenCalled()
+        {
+            _categoryRepositoryMock.Setup(r => r.GetById(1)).ReturnsAsync((Category)null);
 
-                // Assert
-                result.Should().BeNull();
-            }
+            await _service.GetById(1);
 
-            [Fact]
-            public async void ShouldCallSearchFromRepository_OnlyOnce()
-            {
-                // Arrange
-                var categoryList = _fixture.Create<List<Category>>();
-                var categoryName = _fixture.Create<string>();
+            _categoryRepositoryMock.Verify(r => r.GetById(1), Times.Once);
+        }
 
-                _categoryRepositoryMock.Setup(c =>
-                        c.Search(c => c.Name.Contains(categoryName)))
-                    .ReturnsAsync(categoryList);
+        [Fact]
+        public async Task Add_ShouldAddCategory_WhenCategoryNameDoesNotExist()
+        {
+            var category = _fixture.Create<Category>();
+            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
+                .ReturnsAsync(new List<Category>());
+            _categoryRepositoryMock.Setup(r => r.Add(category));
 
-                // Act
-                await _categoryService.Search(categoryName);
+            var result = await _service.Add(category);
 
-                // Assert
-                _categoryRepositoryMock.Verify(mock => mock.Search(c => c.Name.Contains(categoryName)), Times.Once);
-            }
+            result.Should().NotBeNull();
+            result.Should().BeOfType<OperationResult<Category>>();
+            result.Success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task Add_ShouldNotAddCategory_WhenCategoryNameAlreadyExists()
+        {
+            var category = _fixture.Create<Category>();
+            var existingCategories = _fixture.CreateMany<Category>().ToList();
+            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
+                .ReturnsAsync(existingCategories);
+
+            var result = await _service.Add(category);
+
+            result.Should().NotBeNull();
+            result.Success.Should().BeFalse();
+            result.Message.Should().NotBeNullOrEmpty();
+        }
+
+        [Fact]
+        public async Task Add_ShouldCallRepositoryOnce_WhenCategoryIsValid()
+        {
+            var category = _fixture.Create<Category>();
+            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
+                .ReturnsAsync(new List<Category>());
+            _categoryRepositoryMock.Setup(r => r.Add(category));
+
+            await _service.Add(category);
+
+            _categoryRepositoryMock.Verify(r => r.Add(category), Times.Once);
+        }
+
+        [Fact]
+        public async Task Update_ShouldUpdateCategory_WhenCategoryNameDoesNotExist()
+        {
+            var category = _fixture.Create<Category>();
+            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
+                .ReturnsAsync(new List<Category>());
+            _categoryRepositoryMock.Setup(r => r.GetByIdAsNoTracking(category.Id)).ReturnsAsync(category);
+            _categoryRepositoryMock.Setup(r => r.Update(category));
+
+            var result = await _service.Update(category);
+
+            result.Should().NotBeNull();
+            result.Success.Should().BeTrue();
+            result.Payload.Should().NotBeNull();
+            result.Should().BeOfType<OperationResult<Category>>();
+        }
+
+        [Fact]
+        public async Task Update_ShouldNotUpdateCategory_WhenCategoryNameAlreadyExists()
+        {
+            var category = _fixture.Create<Category>();
+            var existingCategories = _fixture.CreateMany<Category>().ToList();
+            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
+                .ReturnsAsync(existingCategories);
+            _categoryRepositoryMock.Setup(r => r.GetByIdAsNoTracking(category.Id)).ReturnsAsync(category);
+
+            var result = await _service.Update(category);
+
+            result.Should().NotBeNull();
+            result.Success.Should().BeFalse();
+            result.Message.Should().NotBeNullOrEmpty();
+        }
+
+        [Fact]
+        public async Task Update_ShouldCallRepositoryOnce_WhenCategoryIsValid()
+        {
+            var category = _fixture.Create<Category>();
+            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
+                .ReturnsAsync(new List<Category>());
+            _categoryRepositoryMock.Setup(r => r.GetByIdAsNoTracking(category.Id)).ReturnsAsync(category);
+
+            await _service.Update(category);
+
+            _categoryRepositoryMock.Verify(r => r.Update(category), Times.Once);
+        }
+
+        [Fact]
+        public async Task Remove_ShouldRemoveCategory_WhenCategoryHasNoAssociatedBooks()
+        {
+            var category = _fixture.Create<Category>();
+
+            _categoryRepositoryMock
+                .Setup(r => r.GetById(category.Id))
+                .ReturnsAsync(category);
+
+            _bookServiceMock
+                .Setup(s => s.GetBooksByCategory(category.Id))
+                .ReturnsAsync(new List<Book>());
+
+            var result = await _service.Remove(category.Id);
+
+            result.Success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task Remove_ShouldNotRemoveCategory_WhenCategoryHasAssociatedBooks()
+        {
+            var category = _fixture.Create<Category>();
+
+            var books = _fixture
+                .Build<Book>()
+                .With(b => b.CategoryId, category.Id)
+                .CreateMany()
+                .ToList();
+
+            _categoryRepositoryMock
+                .Setup(r => r.GetById(category.Id))
+                .ReturnsAsync(category);
+
+            _bookServiceMock
+                .Setup(s => s.GetBooksByCategory(category.Id))
+                .ReturnsAsync(books);
+
+            var result = await _service.Remove(category.Id);
+
+            result.Success.Should().BeFalse();
+            result.Message.Should().Contain("associated books");
+        }
+
+        [Fact]
+        public async Task Remove_ShouldReturnFalse_WhenCategoryDoesNotExist()
+        {
+            _categoryRepositoryMock
+                .Setup(r => r.GetById(It.IsAny<int>()))
+                .ReturnsAsync((Category)null);
+
+            var result = await _service.Remove(999);
+
+            result.Success.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task Remove_ShouldCallRepositoryOnce_WhenCategoryCanBeRemoved()
+        {
+            var category = _fixture.Create<Category>();
+
+            _categoryRepositoryMock
+                .Setup(r => r.GetById(category.Id))
+                .ReturnsAsync(category);
+
+            _bookServiceMock
+                .Setup(s => s.GetBooksByCategory(category.Id))
+                .ReturnsAsync(new List<Book>());
+
+            await _service.Remove(category.Id);
+
+            _categoryRepositoryMock.Verify(r => r.Remove(category), Times.Once);
+        }
+
+        [Theory]
+        [InlineData("Fiction")]
+        [InlineData("Science")]
+        [InlineData("Biography")]
+        public async Task Search_ShouldReturnListOfCategories_WhenCategoriesWithSearchedNameExist(string searchTerm)
+        {
+            var categories = _fixture
+                .Build<Category>()
+                .With(c => c.Name, searchTerm)
+                .CreateMany(2)
+                .ToList();
+
+            _categoryRepositoryMock
+                .Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
+                .ReturnsAsync(categories);
+
+            var result = await _service.Search(searchTerm);
+
+            result.Should().NotBeNull();
+            result.Should().BeOfType<List<Category>>();
+            result.Should().HaveCount(2);
+        }
+
+        [Fact]
+        public async Task Search_ShouldReturnNull_WhenCategoriesWithSearchedNameDoNotExist()
+        {
+            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
+                .ReturnsAsync((IEnumerable<Category>)null);
+
+            var result = await _service.Search("NonExistent");
+
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task Search_ShouldCallRepositoryOnce_WhenCalled()
+        {
+            var categories = _fixture.CreateMany<Category>().ToList();
+            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
+                .ReturnsAsync(categories);
+
+            await _service.Search("Test");
+
+            _categoryRepositoryMock.Verify(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()), Times.Once);
         }
     }
 }

@@ -1,9 +1,8 @@
-﻿using AutoFixture;
-using AutoMapper;
+using AutoFixture;
 using BookStore.API.Controllers;
 using BookStore.API.Dtos;
 using BookStore.API.Dtos.Book;
-using BookStore.API.Dtos.Category;
+using BookStore.API.Mappings;
 using BookStore.API.Tests.Helpers;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
@@ -11,697 +10,463 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BookStore.API.Tests
 {
     public class BooksControllerTests
     {
-        public abstract class BooksControllerTestsBase
+        private readonly Fixture _fixture;
+        private readonly Mock<IBookService> _bookServiceMock;
+        private readonly BooksController _controller;
+
+        public BooksControllerTests()
         {
-            protected readonly Fixture _fixture;
-            protected readonly BooksController _booksController;
-            protected readonly Mock<IBookService> _bookServiceMock;
-            protected readonly Mock<IMapper> _mapperMock;
+            _fixture = FixtureFactory.Create();
+            _bookServiceMock = new Mock<IBookService>();
+            _controller = new BooksController(_bookServiceMock.Object);
+        }
 
-            protected BooksControllerTestsBase()
+        private Book CreateBook(int id = 1, string name = "Test Book", int categoryId = 1)
+        {
+            return new Book
             {
-                _fixture = FixtureFactory.Create();
-                _bookServiceMock = new Mock<IBookService>();
-                _mapperMock = new Mock<IMapper>();
-                _booksController = new BooksController(_mapperMock.Object, _bookServiceMock.Object);
-            }
-
-            protected Book CreateBook()
-            {
-                return new Book()
-                {
-                    Id = 2,
-                    Name = "Book Test",
-                    Author = "Author Test",
-                    Description = "Description Test",
-                    Value = 10,
-                    CategoryId = 1,
-                    PublishDate = DateTime.MinValue.AddYears(40),
-                    Category = new Category()
-                    {
-                        Id = 1,
-                        Name = "Category Test"
-                    }
-                };
-            }
-
-            protected BookResultDto MapModelToBookResultDto(Book book)
-            {
-                var bookDto = new BookResultDto()
-                {
-                    Id = book.Id,
-                    Name = book.Name,
-                    Author = book.Author,
-                    Description = book.Description,
-                    PublishDate = book.PublishDate,
-                    Value = book.Value,
-                    CategoryId = book.CategoryId
-                };
-                return bookDto;
-            }
-
-            protected List<Book> CreateBookList()
-            {
-                return new List<Book>()
-            {
-                new Book()
-                {
-                    Id = 1,
-                    Name = "Book Test 1",
-                    Author = "Author Test 1",
-                    Description = "Description Test 1",
-                    Value = 10,
-                    CategoryId = 1
-                },
-                new Book()
-                {
-                    Id = 1,
-                    Name = "Book Test 2",
-                    Author = "Author Test 2",
-                    Description = "Description Test 2",
-                    Value = 20,
-                    CategoryId = 1
-                },
-                new Book()
-                {
-                    Id = 1,
-                    Name = "Book Test 3",
-                    Author = "Author Test 3",
-                    Description = "Description Test 3",
-                    Value = 30,
-                    CategoryId = 2
-                }
+                Id = id,
+                Name = name,
+                Author = "Test Author",
+                Description = "Test Description",
+                Value = 29.99,
+                CategoryId = categoryId,
+                PublishDate = DateTime.Now,
+                Category = new Category { Id = categoryId, Name = "Test Category" }
             };
-            }
-
-            protected List<BookResultDto> MapModelToBookResultListDto(List<Book> books)
-            {
-                var listBooks = new List<BookResultDto>();
-
-                foreach (var item in books)
-                {
-                    var book = new BookResultDto()
-                    {
-                        Id = item.Id,
-                        Name = item.Name,
-                        Author = item.Author,
-                        Description = item.Description,
-                        PublishDate = item.PublishDate,
-                        Value = item.Value,
-                        CategoryId = item.CategoryId
-                    };
-                    listBooks.Add(book);
-                }
-                return listBooks;
-            }
         }
 
-        public class GetAll : BooksControllerTestsBase
+        [Fact]
+        public async Task GetAll_ShouldReturnOkWithBooks_WhenBooksExist()
         {
-            [Fact]
-            public async void ShouldReturnOk_WhenBooksExist()
+            var books = new List<Book>
             {
-                // Arrange
-                var books = CreateBookList();
-                var dtoExpected = MapModelToBookResultListDto(books);
+                CreateBook(1, "Book 1"),
+                CreateBook(2, "Book 2"),
+                CreateBook(3, "Book 3")
+            };
+            _bookServiceMock.Setup(s => s.GetAll()).ReturnsAsync(books);
 
-                _bookServiceMock.Setup(c => c.GetAll()).ReturnsAsync(books);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<List<Book>>())).Returns(dtoExpected);
+            var result = await _controller.GetAll();
 
-                // Act
-                var result = await _booksController.GetAll();
-
-                // Assert
-                result.Should().BeOfType<OkObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldReturnOk_WhenDoesNotExistAnyBook()
-            {
-                // Arrange
-                var books = new List<Book>();
-                var dtoExpected = MapModelToBookResultListDto(books);
-
-                _bookServiceMock.Setup(c => c.GetAll()).ReturnsAsync(books);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<List<Book>>())).Returns(dtoExpected);
-
-                // Act
-                var result = await _booksController.GetAll();
-
-                // Assert
-                result.Should().BeOfType<OkObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldCallGetAllFromService_OnlyOnce()
-            {
-                // Arrange
-                var books = CreateBookList();
-                var dtoExpected = MapModelToBookResultListDto(books);
-
-                _bookServiceMock.Setup(c => c.GetAll()).ReturnsAsync(books);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<List<Book>>())).Returns(dtoExpected);
-
-                // Act
-                await _booksController.GetAll();
-
-                // Assert
-                _bookServiceMock.Verify(mock => mock.GetAll(), Times.Once);
-            }
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var returnedBooks = okResult.Value as IEnumerable<BookResultDto>;
+            returnedBooks.Should().HaveCount(3);
+            returnedBooks.First().Name.Should().Be("Book 1");
         }
 
-        public class GetAllWithPagination : BooksControllerTestsBase
+        [Fact]
+        public async Task GetAll_ShouldReturnOkWithEmptyList_WhenNoBooksExist()
         {
-            [Fact]
-            public async void ShouldReturnOk_WhenBooksExist()
-            {
-                // Arrange
-                var books = _fixture.Build<Book>()
-                   .CreateMany()
-                   .ToList();
+            _bookServiceMock.Setup(s => s.GetAll()).ReturnsAsync(new List<Book>());
 
-                var pagedResponse = _fixture.Build<PagedResponse<Book>>()
-                    .With(p => p.Data, books)
-                    .Create();
+            var result = await _controller.GetAll();
 
-                var listBookResultDto = _fixture.Build<BookResultDto>().CreateMany().ToList();
-
-                var pagedResponseDto = new PagedResponseDto<BookResultDto>
-                {
-                    Data = listBookResultDto,
-                    PageNumber = 1,
-                    PageSize = 10,
-                    TotalRecords = 1,
-                    TotalPages = 1
-                };
-
-                _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
-                _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Book>>())).Returns(pagedResponseDto);
-
-
-                // Act
-                var result = await _booksController.GetAllWithPagination();
-
-                // Assert
-                result.Should().BeOfType<OkObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldReturnOk_WhenDoesNotExistAnyBook()
-            {
-                // Arrange
-                var pagedResponse = _fixture.Build<PagedResponse<Book>>()
-                    .Without(p => p.Data)
-                    .Create();
-
-                var listBookResultDto = _fixture.Build<BookResultDto>().CreateMany().ToList();
-                
-                var pagedResponseDto = new PagedResponseDto<BookResultDto>
-                {
-                    Data = null,
-                    PageNumber = 1,
-                    PageSize = 10,
-                    TotalRecords = 1,
-                    TotalPages = 1
-                };
-
-                _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
-                _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Book>>())).Returns(pagedResponseDto);
-
-                // Act
-                var result = await _booksController.GetAllWithPagination();
-
-                // Assert
-                result.Should().BeOfType<OkObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldCallGetAllWithPaginationFromService_OnlyOnce()
-            {
-                // Arrange
-                var books = _fixture.Build<Book>()
-                    .CreateMany()
-                    .ToList();
-
-                var pagedResponse = _fixture.Build<PagedResponse<Book>>()
-                    .With(p => p.Data, books)
-                    .Create();
-
-                var listBookResultDto = _fixture.Build<BookResultDto>().CreateMany().ToList();
-
-                var pagedResponseDto = new PagedResponseDto<BookResultDto>
-                {
-                    Data = listBookResultDto,
-                    PageNumber = 1,
-                    PageSize = 10,
-                    TotalRecords = 1,
-                    TotalPages = 1
-                };
-
-                _bookServiceMock.Setup(c => c.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
-                _mapperMock.Setup(m => m.Map<PagedResponseDto<BookResultDto>>(It.IsAny<PagedResponse<Book>>())).Returns(pagedResponseDto);
-
-                // Act
-                await _booksController.GetAllWithPagination();
-
-                // Assert
-                _bookServiceMock.Verify(mock => mock.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
-            }
-
-            [Theory]
-            [InlineData(0, 10)]
-            [InlineData(1, 0)]
-            [InlineData(-1, 10)]
-            [InlineData(1, -1)]
-            public async void ShouldReturnBadRequest_WhenPaginationParametersAreInvalid(int pageNumber, int pageSize)
-            {
-                // Act
-                var result = await _booksController.GetAllWithPagination(pageNumber, pageSize);
-
-                // Assert
-                result.Should().BeOfType<BadRequestResult>();
-            }
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var returnedBooks = okResult.Value as IEnumerable<BookResultDto>;
+            returnedBooks.Should().BeEmpty();
         }
 
-        public class GetById : BooksControllerTestsBase
+        [Fact]
+        public async Task GetAll_ShouldCallServiceOnce_WhenCalled()
         {
-            [Fact]
-            public async void ShouldReturnOk_WhenBookExists()
-            {
-                // Arrange
-                var book = CreateBook();
-                var dtoExpected = MapModelToBookResultDto(book);
+            _bookServiceMock.Setup(s => s.GetAll()).ReturnsAsync(new List<Book>());
 
-                _bookServiceMock.Setup(c => c.GetById(2)).ReturnsAsync(book);
-                _mapperMock.Setup(m => m.Map<BookResultDto>(It.IsAny<Book>())).Returns(dtoExpected);
+            await _controller.GetAll();
 
-                // Act
-                var result = await _booksController.GetById(2);
-
-                // Assert
-                result.Should().BeOfType<OkObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldReturnNotFound_WhenBookDoesNotExists()
-            {
-                // Arrange
-                _bookServiceMock.Setup(c => c.GetById(2)).ReturnsAsync((Book)null);
-
-                // Act
-                var result = await _booksController.GetById(2);
-
-                // Assert
-                result.Should().BeOfType<NotFoundResult>();
-            }
-
-            [Fact]
-            public async void ShouldCallGetByIdFromService_OnlyOnce()
-            {
-                // Arrange
-                var book = CreateBook();
-                var dtoExpected = MapModelToBookResultDto(book);
-
-                _bookServiceMock.Setup(c => c.GetById(2)).ReturnsAsync(book);
-                _mapperMock.Setup(m => m.Map<BookResultDto>(It.IsAny<Book>())).Returns(dtoExpected);
-
-                // Act
-                await _booksController.GetById(2);
-
-                // Assert
-                _bookServiceMock.Verify(mock => mock.GetById(2), Times.Once);
-            }
+            _bookServiceMock.Verify(s => s.GetAll(), Times.Once);
         }
 
-        public class GetBooksByCategory : BooksControllerTestsBase
+        [Theory]
+        [InlineData(1, 10, 3)]
+        [InlineData(2, 5, 10)]
+        [InlineData(1, 20, 1)]
+        public async Task GetAllWithPagination_ShouldReturnOkWithPagedBooks_WhenBooksExist(int pageNumber, int pageSize, int totalRecords)
         {
-            [Fact]
-            public async void ShouldReturnOk_WhenBookWithSearchedCategoryExist()
-            {
-                // Arrange
-                var bookList = CreateBookList();
-                var book = CreateBook();
-                var dtoExpected = MapModelToBookResultListDto(bookList);
+            var books = Enumerable.Range(1, totalRecords)
+                .Select(i => CreateBook(i, $"Book {i}"))
+                .ToList();
+            var pagedResponse = new PagedResponse<Book>(books, pageNumber, pageSize, totalRecords);
+            _bookServiceMock.Setup(s => s.GetAllWithPagination(pageNumber, pageSize)).ReturnsAsync(pagedResponse);
 
-                _bookServiceMock.Setup(c => c.GetBooksByCategory(book.CategoryId)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<IEnumerable<Book>>())).Returns(dtoExpected);
+            var result = await _controller.GetAllWithPagination(pageNumber, pageSize);
 
-                // Act
-                var result = await _booksController.GetBooksByCategory(book.CategoryId);
-
-                // Assert
-                result.Should().BeOfType<OkObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldReturnNotFound_WhenBookWithSearchedCategoryDoesNotExist()
-            {
-                // Arrange
-                var book = CreateBook();
-
-                _bookServiceMock.Setup(c => c.GetBooksByCategory(book.CategoryId)).ReturnsAsync(new List<Book>());
-
-                // Act
-                var result = await _booksController.GetBooksByCategory(book.CategoryId);
-
-                // Assert
-                result.Should().BeOfType<NotFoundObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldCallGetBooksByCategoryFromService_OnlyOnce()
-            {
-                // Arrange
-                var bookList = CreateBookList();
-                var book = CreateBook();
-                var dtoExpected = MapModelToBookResultListDto(bookList);
-
-                _bookServiceMock.Setup(c => c.GetBooksByCategory(book.CategoryId)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<IEnumerable<Book>>())).Returns(dtoExpected);
-
-                // Act
-                await _booksController.GetBooksByCategory(book.CategoryId);
-
-                // Assert
-                _bookServiceMock.Verify(mock => mock.GetBooksByCategory(book.CategoryId), Times.Once);
-            }
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var pagedDto = (PagedResponseDto<BookResultDto>)okResult.Value;
+            pagedDto.Data.Should().HaveCount(totalRecords);
+            pagedDto.PageNumber.Should().Be(pageNumber);
+            pagedDto.PageSize.Should().Be(pageSize);
+            pagedDto.TotalRecords.Should().Be(totalRecords);
         }
 
-        public class Add : BooksControllerTestsBase
+        [Fact]
+        public async Task GetAllWithPagination_ShouldReturnOkWithEmptyList_WhenNoBooksExist()
         {
-            [Fact]
-            public async void ShouldReturnOk_WhenBookIsAdded()
-            {
-                // Arrange
-                var book = CreateBook();
-                var bookAddDto = new BookAddDto() { Name = book.Name };
-                var bookResultDto = MapModelToBookResultDto(book);
-                var operationResult = new OperationResult<Book>(book);
-                var mappedResult = new OperationResult<BookResultDto>(bookResultDto);
+            var pagedResponse = new PagedResponse<Book>(new List<Book>(), 1, 10, 0);
+            _bookServiceMock.Setup(s => s.GetAllWithPagination(1, 10)).ReturnsAsync(pagedResponse);
 
-                _mapperMock.Setup(m => m.Map<Book>(It.IsAny<BookAddDto>())).Returns(book);
-                _bookServiceMock.Setup(c => c.Add(book)).ReturnsAsync(operationResult);
-                _mapperMock.Setup(m => m.Map<OperationResult<BookResultDto>>(It.IsAny<IOperationResult<Book>>())).Returns(mappedResult);
+            var result = await _controller.GetAllWithPagination();
 
-                // Act
-                var result = await _booksController.Add(bookAddDto);
-
-                // Assert
-                result.Should().BeOfType<OkObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldReturnBadRequest_WhenModelStateIsInvalid()
-            {
-                // Arrange
-                var bookAddDto = new BookAddDto();
-                _booksController.ModelState.AddModelError("Name", "The field name is required");
-
-                // Act
-                var result = await _booksController.Add(bookAddDto);
-
-                // Assert
-                result.Should().BeOfType<BadRequestResult>();
-            }
-
-            [Fact]
-            public async void ShouldReturnBadRequest_WhenBookResultIsNull()
-            {
-                // Arrange
-                var book = CreateBook();
-                var bookAddDto = new BookAddDto() { Name = book.Name };
-                var operationResult = new OperationResult<Book>(false, "Book with this name already exists");
-                var mappedResult = new OperationResult<BookResultDto>(false, "Book with this name already exists");
-
-                _mapperMock.Setup(m => m.Map<Book>(It.IsAny<BookAddDto>())).Returns(book);
-                _bookServiceMock.Setup(c => c.Add(book)).ReturnsAsync(operationResult);
-                _mapperMock.Setup(m => m.Map<OperationResult<BookResultDto>>(It.IsAny<IOperationResult<Book>>())).Returns(mappedResult);
-
-                // Act
-                var result = await _booksController.Add(bookAddDto);
-
-                // Assert
-                result.Should().BeOfType<BadRequestObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldCallAddFromService_OnlyOnce()
-            {
-                // Arrange
-                var book = CreateBook();
-                var bookAddDto = new BookAddDto() { Name = book.Name };
-                var operationResult = new OperationResult<Book>(book);
-                var bookResultDto = MapModelToBookResultDto(book);
-                var mappedResult = new OperationResult<BookResultDto>(bookResultDto);
-
-                _mapperMock.Setup(m => m.Map<Book>(It.IsAny<BookAddDto>())).Returns(book);
-                _bookServiceMock.Setup(c => c.Add(book)).ReturnsAsync(operationResult);
-                _mapperMock.Setup(m => m.Map<OperationResult<BookResultDto>>(It.IsAny<IOperationResult<Book>>())).Returns(mappedResult);
-
-                // Act
-                await _booksController.Add(bookAddDto);
-
-                // Assert
-                _bookServiceMock.Verify(mock => mock.Add(book), Times.Once);
-            }
+            result.Should().BeOfType<OkObjectResult>();
         }
 
-        public class Update : BooksControllerTestsBase
+        [Theory]
+        [InlineData(0, 10)]
+        [InlineData(1, 0)]
+        [InlineData(-1, 10)]
+        [InlineData(1, -1)]
+        [InlineData(0, 0)]
+        [InlineData(-5, -5)]
+        public async Task GetAllWithPagination_ShouldReturnBadRequest_WhenParametersAreInvalid(int pageNumber, int pageSize)
         {
-            [Fact]
-            public async void ShouldReturnOk_WhenBookIsUpdatedCorrectly()
-            {
-                // Arrange
-                var book = CreateBook();
-                var bookEditDto = new BookEditDto() { Id = book.Id, Name = "Test" };
-                var operationResult = new OperationResult<Book>(book);
-                var bookResultDto = MapModelToBookResultDto(book);
-                var mappedResult = new OperationResult<BookResultDto>(bookResultDto);
+            var result = await _controller.GetAllWithPagination(pageNumber, pageSize);
 
-                _mapperMock.Setup(m => m.Map<Book>(It.IsAny<BookEditDto>())).Returns(book);
-                _bookServiceMock.Setup(c => c.GetById(book.Id)).ReturnsAsync(book);
-                _bookServiceMock.Setup(c => c.Update(book)).ReturnsAsync(operationResult);
-                _mapperMock.Setup(m => m.Map<OperationResult<BookResultDto>>(It.IsAny<IOperationResult<Book>>())).Returns(mappedResult);
-
-                // Act
-                var result = await _booksController.Update(bookEditDto.Id, bookEditDto);
-
-                // Assert
-                result.Should().BeOfType<OkObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldReturnBadRequest_WhenBookIdIsDifferentThenParameterId()
-            {
-                // Arrange
-                var bookEditDto = new BookEditDto() { Id = 1, Name = "Test" };
-
-                // Act
-                var result = await _booksController.Update(2, bookEditDto);
-
-                // Assert
-                result.Should().BeOfType<BadRequestResult>();
-            }
-
-            [Fact]
-            public async void ShouldReturnBadRequest_WhenModelStateIsInvalid()
-            {
-                // Arrange
-                var bookEditDto = new BookEditDto() { Id = 1 };
-                _booksController.ModelState.AddModelError("Name", "The field name is required");
-
-                // Act
-                var result = await _booksController.Update(1, bookEditDto);
-
-                // Assert
-                result.Should().BeOfType<BadRequestResult>();
-            }
-
-            [Fact]
-            public async void ShouldCallUpdateFromService_OnlyOnce()
-            {
-                // Arrange
-                var book = CreateBook();
-                var bookEditDto = new BookEditDto() { Id = book.Id, Name = "Test" };
-                var operationResult = new OperationResult<Book>(book);
-                var bookResultDto = MapModelToBookResultDto(book);
-                var mappedResult = new OperationResult<BookResultDto>(bookResultDto);
-
-                _mapperMock.Setup(m => m.Map<Book>(It.IsAny<BookEditDto>())).Returns(book);
-                _bookServiceMock.Setup(c => c.GetById(book.Id)).ReturnsAsync(book);
-                _bookServiceMock.Setup(c => c.Update(book)).ReturnsAsync(operationResult);
-                _mapperMock.Setup(m => m.Map<OperationResult<BookResultDto>>(It.IsAny<IOperationResult<Book>>())).Returns(mappedResult);
-
-                // Act
-                await _booksController.Update(bookEditDto.Id, bookEditDto);
-
-                // Assert
-                _bookServiceMock.Verify(mock => mock.Update(book), Times.Once);
-            }
+            result.Should().BeOfType<BadRequestResult>();
         }
 
-        public class Remove : BooksControllerTestsBase
+        [Fact]
+        public async Task GetAllWithPagination_ShouldCallServiceOnce_WhenCalled()
         {
-            [Fact]
-            public async void ShouldReturnOk_WhenBookIsRemoved()
-            {
-                // Arrange
-                var book = CreateBook();
-                var operationResult = new OperationResult<bool>(true);
-                _bookServiceMock.Setup(c => c.Remove(book.Id)).ReturnsAsync(operationResult);
+            var pagedResponse = new PagedResponse<Book>(new List<Book>(), 1, 10, 0);
+            _bookServiceMock.Setup(s => s.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
 
-                // Act
-                var result = await _booksController.Remove(book.Id);
+            await _controller.GetAllWithPagination(1, 10);
 
-                // Assert
-                result.Should().BeOfType<NoContentResult>();
-            }
-
-            [Fact]
-            public async void ShouldReturnNotFound_WhenBookDoesNotExist()
-            {
-                // Arrange
-                var book = CreateBook();
-                var operationResult = new OperationResult<bool>(false, $"Book with ID {book.Id} not found");
-                _bookServiceMock.Setup(c => c.Remove(book.Id)).ReturnsAsync(operationResult);
-
-                // Act
-                var result = await _booksController.Remove(book.Id);
-
-                // Assert
-                result.Should().BeOfType<NotFoundObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldCallRemoveFromService_OnlyOnce()
-            {
-                // Arrange
-                var book = CreateBook();
-                var operationResult = new OperationResult<bool>(true);
-                _bookServiceMock.Setup(c => c.Remove(book.Id)).ReturnsAsync(operationResult);
-
-                // Act
-                await _booksController.Remove(book.Id);
-
-                // Assert
-                _bookServiceMock.Verify(mock => mock.Remove(book.Id), Times.Once);
-            }
+            _bookServiceMock.Verify(s => s.GetAllWithPagination(1, 10), Times.Once);
         }
 
-        public class Search : BooksControllerTestsBase
+        [Fact]
+        public async Task GetById_ShouldReturnOkWithBook_WhenBookExists()
         {
-            [Fact]
-            public async void ShouldReturnOk_WhenBookWithSearchedNameExist()
-            {
-                // Arrange
-                var bookList = CreateBookList();
-                var book = CreateBook();
-                var bookResultDtoList = bookList.Select(MapModelToBookResultDto).ToList();
+            var book = CreateBook(1, "Test Book");
+            _bookServiceMock.Setup(s => s.GetById(1)).ReturnsAsync(book);
 
-                _bookServiceMock.Setup(c => c.Search(book.Name)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<IEnumerable<Book>>())).Returns(bookResultDtoList);
+            var result = await _controller.GetById(1);
 
-                // Act
-                var result = await _booksController.Search(book.Name);
-
-                // Assert
-                result.Should().BeOfType<OkObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldReturnNotFound_WhenBookWithSearchedNameDoesNotExist()
-            {
-                // Arrange
-                var book = CreateBook();
-                var bookList = new List<Book>();
-
-                _bookServiceMock.Setup(c => c.Search(book.Name)).ReturnsAsync(bookList);
-
-                // Act
-                var result = await _booksController.Search(book.Name);
-
-                // Assert
-                result.Should().BeOfType<NotFoundObjectResult>();
-            }
-
-            [Fact]
-            public async void ShouldCallSearchFromService_OnlyOnce()
-            {
-                // Arrange
-                var bookList = CreateBookList();
-                var book = CreateBook();
-                var bookResultDtoList = bookList.Select(MapModelToBookResultDto).ToList();
-
-                _bookServiceMock.Setup(c => c.Search(book.Name)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<IEnumerable<Book>>())).Returns(bookResultDtoList);
-
-                // Act
-                await _booksController.Search(book.Name);
-
-                // Assert
-                _bookServiceMock.Verify(mock => mock.Search(book.Name), Times.Once);
-            }
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var dto = okResult.Value as BookResultDto;
+            dto.Should().NotBeNull();
+            dto.Id.Should().Be(1);
+            dto.Name.Should().Be("Test Book");
         }
 
-        public class SearchBookWithCategory : BooksControllerTestsBase
+        [Fact]
+        public async Task GetById_ShouldReturnNotFound_WhenBookDoesNotExist()
         {
-            [Fact]
-            public async void ShouldReturnOk_WhenBookWithSearchedValueExist()
-            {
-                // Arrange
-                var bookList = CreateBookList();
-                var book = CreateBook();
-                var bookResultList = MapModelToBookResultListDto(bookList);
+            _bookServiceMock.Setup(s => s.GetById(It.IsAny<int>())).ReturnsAsync((Book)null);
 
-                _bookServiceMock.Setup(c => c.SearchBookWithCategory(book.Name)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<IEnumerable<Book>>())).Returns(bookResultList);
+            var result = await _controller.GetById(999);
 
-                // Act
-                var result = await _booksController.SearchBookWithCategory(book.Name);
+            result.Should().BeOfType<NotFoundResult>();
+        }
 
-                // Assert
-                result.Should().BeOfType<OkObjectResult>();
-            }
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        [InlineData(999)]
+        public async Task GetById_ShouldCallServiceOnce_WhenCalled(int bookId)
+        {
+            var book = CreateBook(bookId);
+            _bookServiceMock.Setup(s => s.GetById(bookId)).ReturnsAsync(book);
 
-            [Fact]
-            public async void ShouldReturnNotFound_WhenBookWithSearchedValueDoesNotExist()
-            {
-                // Arrange
-                var book = CreateBook();
-                var bookList = new List<Book>();
+            await _controller.GetById(bookId);
 
-                _bookServiceMock.Setup(c => c.SearchBookWithCategory(book.Name)).ReturnsAsync(bookList);
+            _bookServiceMock.Verify(s => s.GetById(bookId), Times.Once);
+        }
 
-                // Act
-                var result = await _booksController.SearchBookWithCategory(book.Name);
+        [Fact]
+        public async Task Add_ShouldReturnOkWithBook_WhenBookIsValid()
+        {
+            var dto = _fixture.Create<BookAddDto>();
+            var book = dto.ToModel();
+            var operationResult = new OperationResult<Book>(book, true, null);
+            _bookServiceMock.Setup(s => s.Add(It.IsAny<Book>())).ReturnsAsync(operationResult);
 
-                // Assert
-                result.Should().BeOfType<NotFoundObjectResult>();
-            }
+            var result = await _controller.Add(dto);
 
-            [Fact]
-            public async void ShouldCallSearchBookWithCategoryFromService_OnlyOnce()
-            {
-                // Arrange
-                var bookList = CreateBookList();
-                var book = CreateBook();
-                var bookResultList = MapModelToBookResultListDto(bookList);
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var resultDto = okResult.Value as OperationResult<BookResultDto>;
+            resultDto.Should().NotBeNull();
+            resultDto.Success.Should().BeTrue();
+        }
 
-                _bookServiceMock.Setup(c => c.SearchBookWithCategory(book.Name)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<IEnumerable<Book>>())).Returns(bookResultList);
+        [Fact]
+        public async Task Add_ShouldReturnBadRequest_WhenModelStateIsInvalid()
+        {
+            var dto = _fixture.Create<BookAddDto>();
+            _controller.ModelState.AddModelError("Name", "Name is required");
 
-                // Act
-                await _booksController.SearchBookWithCategory(book.Name);
+            var result = await _controller.Add(dto);
 
-                // Assert
-                _bookServiceMock.Verify(mock => mock.SearchBookWithCategory(book.Name), Times.Once);
-            }
+            result.Should().BeOfType<BadRequestResult>();
+        }
+
+        [Fact]
+        public async Task Add_ShouldReturnBadRequest_WhenServiceReturnsFails()
+        {
+            var dto = _fixture.Create<BookAddDto>();
+            var operationResult = new OperationResult<Book>(false, "Book already exists");
+            _bookServiceMock.Setup(s => s.Add(It.IsAny<Book>())).ReturnsAsync(operationResult);
+
+            var result = await _controller.Add(dto);
+
+            result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Fact]
+        public async Task Add_ShouldCallServiceOnce_WhenCalled()
+        {
+            var dto = _fixture.Create<BookAddDto>();
+            var book = dto.ToModel();
+            var operationResult = new OperationResult<Book>(book, true, null);
+            _bookServiceMock.Setup(s => s.Add(It.IsAny<Book>())).ReturnsAsync(operationResult);
+
+            await _controller.Add(dto);
+
+            _bookServiceMock.Verify(s => s.Add(It.IsAny<Book>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task Update_ShouldReturnOkWithBook_WhenBookIsValid()
+        {
+            var dto = _fixture.Create<BookEditDto>();
+            var book = dto.ToModel();
+            var operationResult = new OperationResult<Book>(book, true, null);
+            _bookServiceMock.Setup(s => s.Update(It.IsAny<Book>())).ReturnsAsync(operationResult);
+
+            var result = await _controller.Update(dto.Id, dto);
+
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var resultDto = okResult.Value as OperationResult<BookResultDto>;
+            resultDto.Should().NotBeNull();
+            resultDto.Success.Should().BeTrue();
+        }
+
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(5, 10)]
+        [InlineData(100, 999)]
+        public async Task Update_ShouldReturnBadRequest_WhenIdMismatch(int urlId, int dtoId)
+        {
+            var dto = _fixture.Build<BookEditDto>().With(b => b.Id, dtoId).Create();
+
+            var result = await _controller.Update(urlId, dto);
+
+            result.Should().BeOfType<BadRequestResult>();
+        }
+
+        [Fact]
+        public async Task Update_ShouldReturnBadRequest_WhenModelStateIsInvalid()
+        {
+            var dto = _fixture.Create<BookEditDto>();
+            _controller.ModelState.AddModelError("Name", "Name is required");
+
+            var result = await _controller.Update(dto.Id, dto);
+
+            result.Should().BeOfType<BadRequestResult>();
+        }
+
+        [Fact]
+        public async Task Update_ShouldReturnBadRequest_WhenServiceReturnsFails()
+        {
+            var dto = _fixture.Create<BookEditDto>();
+            var operationResult = new OperationResult<Book>(false, "Book not found");
+            _bookServiceMock.Setup(s => s.Update(It.IsAny<Book>())).ReturnsAsync(operationResult);
+
+            var result = await _controller.Update(dto.Id, dto);
+
+            result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Fact]
+        public async Task Update_ShouldCallServiceOnce_WhenCalled()
+        {
+            var dto = _fixture.Create<BookEditDto>();
+            var book = dto.ToModel();
+            var operationResult = new OperationResult<Book>(book, true, null);
+            _bookServiceMock.Setup(s => s.Update(It.IsAny<Book>())).ReturnsAsync(operationResult);
+
+            await _controller.Update(dto.Id, dto);
+
+            _bookServiceMock.Verify(s => s.Update(It.IsAny<Book>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task Remove_ShouldReturnNoContent_WhenBookIsRemoved()
+        {
+            var operationResult = new OperationResult<bool>(true, true, null);
+
+            _bookServiceMock
+                .Setup(s => s.Remove(1))
+                .ReturnsAsync(operationResult);
+
+            var result = await _controller.Remove(1);
+
+            result.Should().BeOfType<NoContentResult>();
+        }
+
+        [Fact]
+        public async Task Remove_ShouldReturnNotFound_WhenBookDoesNotExist()
+        {
+            var operationResult = new OperationResult<bool>(false, "Book with ID 1 not found");
+
+            _bookServiceMock
+                .Setup(s => s.Remove(1))
+                .ReturnsAsync(operationResult);
+
+            var result = await _controller.Remove(1);
+
+            result.Should().BeOfType<NotFoundObjectResult>();
+        }
+
+        [Fact]
+        public async Task Remove_ShouldReturnBadRequest_WhenServiceFails()
+        {
+            var operationResult = new OperationResult<bool>(false, "Cannot delete book");
+
+            _bookServiceMock
+                .Setup(s => s.Remove(1))
+                .ReturnsAsync(operationResult);
+
+            var result = await _controller.Remove(1);
+
+            result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(50)]
+        [InlineData(999)]
+        public async Task Remove_ShouldCallServiceOnce_WhenCalled(int bookId)
+        {
+            var operationResult = new OperationResult<bool>(true, true, null);
+
+            _bookServiceMock
+                .Setup(s => s.Remove(bookId))
+                .ReturnsAsync(operationResult);
+
+            await _controller.Remove(bookId);
+
+            _bookServiceMock.Verify(s => s.Remove(bookId), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetBooksByCategory_ShouldReturnOkWithBooks_WhenBooksExist()
+        {
+            var books = new List<Book> { CreateBook(1), CreateBook(2) };
+            _bookServiceMock.Setup(s => s.GetBooksByCategory(1)).ReturnsAsync(books);
+
+            var result = await _controller.GetBooksByCategory(1);
+
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var dtos = okResult.Value as IEnumerable<BookResultDto>;
+            dtos.Should().HaveCount(2);
+        }
+
+        [Fact]
+        public async Task GetBooksByCategory_ShouldReturnNotFound_WhenNoBooksExist()
+        {
+            _bookServiceMock.Setup(s => s.GetBooksByCategory(1)).ReturnsAsync(new List<Book>());
+
+            var result = await _controller.GetBooksByCategory(1);
+
+            result.Should().BeOfType<NotFoundObjectResult>();
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(-999)]
+        public async Task GetBooksByCategory_ShouldReturnBadRequest_WhenCategoryIdIsInvalid(int categoryId)
+        {
+            var result = await _controller.GetBooksByCategory(categoryId);
+
+            result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Theory]
+        [InlineData("Test")]
+        [InlineData("Book")]
+        [InlineData("Author")]
+        public async Task Search_ShouldReturnOkWithBooks_WhenBooksFound(string searchTerm)
+        {
+            var books = new List<Book> { CreateBook(1, searchTerm) };
+            _bookServiceMock.Setup(s => s.Search(searchTerm)).ReturnsAsync(books);
+
+            var result = await _controller.Search(searchTerm);
+
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var dtos = okResult.Value as IEnumerable<BookResultDto>;
+            dtos.Should().HaveCount(1);
+        }
+
+        [Fact]
+        public async Task Search_ShouldReturnNotFound_WhenNoBooksFound()
+        {
+            _bookServiceMock.Setup(s => s.Search("NonExistent")).ReturnsAsync(new List<Book>());
+
+            var result = await _controller.Search("NonExistent");
+
+            result.Should().BeOfType<NotFoundObjectResult>();
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public async Task Search_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string searchTerm)
+        {
+            var result = await _controller.Search(searchTerm);
+
+            result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Fact]
+        public async Task SearchBookWithCategory_ShouldReturnOkWithBooks_WhenBooksFound()
+        {
+            var books = new List<Book> { CreateBook(1) };
+            _bookServiceMock.Setup(s => s.SearchBookWithCategory("Test")).ReturnsAsync(books);
+
+            var result = await _controller.SearchBookWithCategory("Test");
+
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var dtos = okResult.Value as IEnumerable<BookResultDto>;
+            dtos.Should().HaveCount(1);
+        }
+
+        [Fact]
+        public async Task SearchBookWithCategory_ShouldReturnNotFound_WhenNoBooksFound()
+        {
+            _bookServiceMock.Setup(s => s.SearchBookWithCategory("NonExistent")).ReturnsAsync(new List<Book>());
+
+            var result = await _controller.SearchBookWithCategory("NonExistent");
+
+            result.Should().BeOfType<NotFoundObjectResult>();
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public async Task SearchBookWithCategory_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string searchTerm)
+        {
+            var result = await _controller.SearchBookWithCategory(searchTerm);
+
+            result.Should().BeOfType<BadRequestObjectResult>();
         }
     }
 }

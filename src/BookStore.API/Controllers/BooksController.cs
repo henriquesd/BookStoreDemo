@@ -1,6 +1,6 @@
-﻿using AutoMapper;
-using BookStore.API.Dtos;
+﻿using BookStore.API.Dtos;
 using BookStore.API.Dtos.Book;
+using BookStore.API.Mappings;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -11,12 +11,9 @@ namespace BookStore.API.Controllers
     public class BooksController : MainController
     {
         private readonly IBookService _bookService;
-        private readonly IMapper _mapper;
 
-        public BooksController(IMapper mapper,
-                                IBookService bookService)
+        public BooksController(IBookService bookService)
         {
-            _mapper = mapper;
             _bookService = bookService;
         }
 
@@ -26,11 +23,12 @@ namespace BookStore.API.Controllers
         {
             var books = await _bookService.GetAll();
 
-            return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
+            return Ok(books.ToDto());
         }
 
         [HttpGet("GetAllWithPagination")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
         {
             if (pageNumber <= 0 || pageSize <= 0)
@@ -40,7 +38,7 @@ namespace BookStore.API.Controllers
 
             var paginatedBooks = await _bookService.GetAllWithPagination(pageNumber, pageSize);
 
-            var booksResultDto = _mapper.Map<PagedResponseDto<BookResultDto>>(paginatedBooks);
+            var booksResultDto = paginatedBooks.ToDto(b => b.ToDto());
 
             return Ok(booksResultDto);
         }
@@ -57,7 +55,7 @@ namespace BookStore.API.Controllers
                 return NotFound();
             }
 
-            return Ok(_mapper.Map<BookResultDto>(book));
+            return Ok(book.ToDto());
         }
 
         [HttpGet]
@@ -79,7 +77,7 @@ namespace BookStore.API.Controllers
                 return NotFound(new { message = "No books found for this category" });
             }
 
-            return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
+            return Ok(books.ToDto());
         }
 
         [HttpPost]
@@ -92,10 +90,10 @@ namespace BookStore.API.Controllers
                 return BadRequest();
             }
 
-            var book = _mapper.Map<Book>(bookDto);
+            var book = bookDto.ToModel();
             var bookResult = await _bookService.Add(book);
 
-            var result = _mapper.Map<OperationResult<BookResultDto>>(bookResult);
+            var result = bookResult.ToDto();
 
             if (!result.Success)
             {
@@ -120,10 +118,10 @@ namespace BookStore.API.Controllers
                 return BadRequest();
             }
 
-            var book = _mapper.Map<Book>(bookDto);
+            var book = bookDto.ToModel();
             var bookResult = await _bookService.Update(book);
 
-            var result = _mapper.Map<OperationResult<BookResultDto>>(bookResult);
+            var result = bookResult.ToDto();
 
             if (!result.Success)
             {
@@ -169,7 +167,7 @@ namespace BookStore.API.Controllers
                 return NotFound(new { message = "No books were found" });
             }
 
-            return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
+            return Ok(books.ToDto());
         }
 
         [HttpGet]
@@ -190,7 +188,7 @@ namespace BookStore.API.Controllers
                 return NotFound(new { message = "No books were found" });
             }
 
-            return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
+            return Ok(books.ToDto());
         }
     }
 }
