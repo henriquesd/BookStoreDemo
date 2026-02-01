@@ -35,7 +35,7 @@ namespace BookStore.API.Controllers
         {
             if (pageNumber <= 0 || pageSize <= 0)
             {
-                return BadRequest();
+                return BadRequest(new { message = "Page number and page size must be greater than zero" });
             }
 
             var paginatedCategories = await _categoryService.GetAllWithPagination(pageNumber, pageSize);
@@ -54,7 +54,7 @@ namespace BookStore.API.Controllers
 
             if (category == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Category not found" });
             }
 
             var categoryResultDto = category.ToDto();
@@ -63,55 +63,57 @@ namespace BookStore.API.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(OperationResult<CategoryResultDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(OperationResult<CategoryResultDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(CategoryResultDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Add(CategoryAddDto categoryDto)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return BadRequest(ModelState);
             }
 
             var category = categoryDto.ToModel();
             var categoryResult = await _categoryService.Add(category);
 
-            var result = categoryResult.ToDto();
-
-            if (!result.Success)
+            if (!categoryResult.Success)
             {
-                return BadRequest(result);
+                return BadRequest(new { message = categoryResult.Message });
             }
 
-            return Ok(result);
+            var categoryResultDto = categoryResult.Payload.ToDto();
+
+            return CreatedAtAction(nameof(GetById), new { id = categoryResultDto.Id }, categoryResultDto);
         }
 
         [HttpPut("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CategoryResultDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, CategoryEditDto categoryDto)
         {
             if (id != categoryDto.Id)
             {
-                return BadRequest();
+                return BadRequest(new { message = "ID mismatch" });
             }
 
             if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return BadRequest(ModelState);
             }
 
             var category = categoryDto.ToModel();
-
             var categoryResult = await _categoryService.Update(category);
 
-            var result = categoryResult.ToDto();
-
-            if (!result.Success)
+            if (!categoryResult.Success)
             {
-                return BadRequest(result);
+                return categoryResult.Message.Contains("not found")
+                    ? NotFound(new { message = categoryResult.Message })
+                    : BadRequest(new { message = categoryResult.Message });
             }
 
-            return Ok(result);
+            var categoryResultDto = categoryResult.Payload.ToDto();
+
+            return Ok(categoryResultDto);
         }
 
         [HttpDelete("{id:int}")]

@@ -33,7 +33,7 @@ namespace BookStore.API.Controllers
         {
             if (pageNumber <= 0 || pageSize <= 0)
             {
-                return BadRequest();
+                return BadRequest(new { message = "Page number and page size must be greater than zero" });
             }
 
             var paginatedBooks = await _bookService.GetAllWithPagination(pageNumber, pageSize);
@@ -52,7 +52,7 @@ namespace BookStore.API.Controllers
 
             if (book == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Book not found" });
             }
 
             return Ok(book.ToDto());
@@ -81,54 +81,57 @@ namespace BookStore.API.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(OperationResult<BookResultDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(OperationResult<BookResultDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(BookResultDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Add(BookAddDto bookDto)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return BadRequest(ModelState);
             }
 
             var book = bookDto.ToModel();
             var bookResult = await _bookService.Add(book);
 
-            var result = bookResult.ToDto();
-
-            if (!result.Success)
+            if (!bookResult.Success)
             {
-                return BadRequest(result);
+                return BadRequest(new { message = bookResult.Message });
             }
 
-            return Ok(result);
+            var bookResultDto = bookResult.Payload.ToDto();
+
+            return CreatedAtAction(nameof(GetById), new { id = bookResultDto.Id }, bookResultDto);
         }
 
         [HttpPut("{id:int}")]
-        [ProducesResponseType(typeof(OperationResult<BookResultDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(OperationResult<BookResultDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(BookResultDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, BookEditDto bookDto)
         {
             if (id != bookDto.Id)
             {
-                return BadRequest();
+                return BadRequest(new { message = "ID mismatch" });
             }
 
             if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return BadRequest(ModelState);
             }
 
             var book = bookDto.ToModel();
             var bookResult = await _bookService.Update(book);
 
-            var result = bookResult.ToDto();
-
-            if (!result.Success)
+            if (!bookResult.Success)
             {
-                return BadRequest(result);
+                return bookResult.Message.Contains("not found")
+                    ? NotFound(new { message = bookResult.Message })
+                    : BadRequest(new { message = bookResult.Message });
             }
 
-            return Ok(result);
+            var bookResultDto = bookResult.Payload.ToDto();
+
+            return Ok(bookResultDto);
         }
 
         [HttpDelete("{id:int}")]

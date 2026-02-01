@@ -129,7 +129,7 @@ namespace BookStore.API.Tests
         {
             var result = await _controller.GetAllWithPagination(pageNumber, pageSize);
 
-            result.Should().BeOfType<BadRequestResult>();
+            result.Should().BeOfType<BadRequestObjectResult>();
         }
 
         [Fact]
@@ -166,7 +166,7 @@ namespace BookStore.API.Tests
 
             var result = await _controller.GetById(999);
 
-            result.Should().BeOfType<NotFoundResult>();
+            result.Should().BeOfType<NotFoundObjectResult>();
         }
 
         [Theory]
@@ -184,20 +184,21 @@ namespace BookStore.API.Tests
         }
 
         [Fact]
-        public async Task Add_ShouldReturnOkWithBook_WhenBookIsValid()
+        public async Task Add_ShouldReturnCreatedWithBook_WhenBookIsValid()
         {
             var dto = _fixture.Create<BookAddDto>();
             var book = dto.ToModel();
+            book.Id = 1; // Set ID to simulate saved entity
             var operationResult = new OperationResult<Book>(book, true, null);
             _bookServiceMock.Setup(s => s.Add(It.IsAny<Book>())).ReturnsAsync(operationResult);
 
             var result = await _controller.Add(dto);
 
-            result.Should().BeOfType<OkObjectResult>();
-            var okResult = result as OkObjectResult;
-            var resultDto = okResult.Value as OperationResult<BookResultDto>;
+            result.Should().BeOfType<CreatedAtActionResult>();
+            var createdResult = result as CreatedAtActionResult;
+            var resultDto = createdResult.Value as BookResultDto;
             resultDto.Should().NotBeNull();
-            resultDto.Success.Should().BeTrue();
+            resultDto.Id.Should().Be(1);
         }
 
         [Fact]
@@ -208,7 +209,7 @@ namespace BookStore.API.Tests
 
             var result = await _controller.Add(dto);
 
-            result.Should().BeOfType<BadRequestResult>();
+            result.Should().BeOfType<BadRequestObjectResult>();
         }
 
         [Fact]
@@ -248,9 +249,9 @@ namespace BookStore.API.Tests
 
             result.Should().BeOfType<OkObjectResult>();
             var okResult = result as OkObjectResult;
-            var resultDto = okResult.Value as OperationResult<BookResultDto>;
+            var resultDto = okResult.Value as BookResultDto;
             resultDto.Should().NotBeNull();
-            resultDto.Success.Should().BeTrue();
+            resultDto.Id.Should().Be(dto.Id);
         }
 
         [Theory]
@@ -263,7 +264,7 @@ namespace BookStore.API.Tests
 
             var result = await _controller.Update(urlId, dto);
 
-            result.Should().BeOfType<BadRequestResult>();
+            result.Should().BeOfType<BadRequestObjectResult>();
         }
 
         [Fact]
@@ -274,11 +275,11 @@ namespace BookStore.API.Tests
 
             var result = await _controller.Update(dto.Id, dto);
 
-            result.Should().BeOfType<BadRequestResult>();
+            result.Should().BeOfType<BadRequestObjectResult>();
         }
 
         [Fact]
-        public async Task Update_ShouldReturnBadRequest_WhenServiceReturnsFails()
+        public async Task Update_ShouldReturnNotFound_WhenServiceReturnsNotFound()
         {
             var dto = _fixture.Create<BookEditDto>();
             var operationResult = new OperationResult<Book>(false, "Book not found");
@@ -286,7 +287,7 @@ namespace BookStore.API.Tests
 
             var result = await _controller.Update(dto.Id, dto);
 
-            result.Should().BeOfType<BadRequestObjectResult>();
+            result.Should().BeOfType<NotFoundObjectResult>();
         }
 
         [Fact]
