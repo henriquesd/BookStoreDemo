@@ -1,0 +1,491 @@
+###############################################################################
+# BookStore API - HTTP Request Collection
+# 
+# This file contains example requests for testing the BookStore API
+# You can use this with VS Code REST Client extension or Visual Studio
+###############################################################################
+
+# Base URL
+@baseUrl = https://localhost:44382
+@contentType = application/json
+
+###############################################################################
+# CATEGORIES API
+###############################################################################
+
+### Get All Categories
+GET {{baseUrl}}/api/categories
+Accept: {{contentType}}
+
+### Get Categories with Pagination
+GET {{baseUrl}}/api/categories/GetAllWithPagination?pageNumber=1&pageSize=10
+Accept: {{contentType}}
+
+### Get Categories with Pagination - Page 2
+GET {{baseUrl}}/api/categories/GetAllWithPagination?pageNumber=2&pageSize=5
+Accept: {{contentType}}
+
+### Get Categories with Pagination - Invalid Parameters (Should return 400)
+GET {{baseUrl}}/api/categories/GetAllWithPagination?pageNumber=0&pageSize=-1
+Accept: {{contentType}}
+
+### Get Category by ID
+GET {{baseUrl}}/api/categories/1
+Accept: {{contentType}}
+
+### Get Category by ID - Not Found (Should return 404)
+GET {{baseUrl}}/api/categories/999
+Accept: {{contentType}}
+
+### Create New Category
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": "Science Fiction"
+}
+
+### Create New Category - Duplicate Name (Should return 400)
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": "Science Fiction"
+}
+
+### Create New Category - Missing Name (Should return 400)
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": ""
+}
+
+### Create New Category - Another Example
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": "Mystery & Thriller"
+}
+
+### Update Category
+PUT {{baseUrl}}/api/categories/1
+Content-Type: {{contentType}}
+
+{
+  "id": 1,
+  "name": "Science Fiction & Fantasy"
+}
+
+### Update Category - ID Mismatch (Should return 400)
+PUT {{baseUrl}}/api/categories/1
+Content-Type: {{contentType}}
+
+{
+  "id": 2,
+  "name": "Science Fiction"
+}
+
+### Update Category - Not Found (Should return 404)
+PUT {{baseUrl}}/api/categories/999
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "name": "Non-existent Category"
+}
+
+### Update Category - Duplicate Name (Should return 400)
+PUT {{baseUrl}}/api/categories/2
+Content-Type: {{contentType}}
+
+{
+  "id": 2,
+  "name": "Science Fiction"
+}
+
+### Delete Category
+DELETE {{baseUrl}}/api/categories/1
+
+### Delete Category - Not Found (Should return 404)
+DELETE {{baseUrl}}/api/categories/999
+
+### Delete Category - With Associated Books (Should return 400)
+DELETE {{baseUrl}}/api/categories/1
+
+### Search Categories
+GET {{baseUrl}}/api/categories/search/fiction
+Accept: {{contentType}}
+
+### Search Categories - No Results (Should return 404)
+GET {{baseUrl}}/api/categories/search/xyz123notfound
+Accept: {{contentType}}
+
+### Search Categories - Empty Search Term (Should return 400)
+GET {{baseUrl}}/api/categories/search/
+Accept: {{contentType}}
+
+###############################################################################
+# BOOKS API
+###############################################################################
+
+### Get All Books
+GET {{baseUrl}}/api/books
+Accept: {{contentType}}
+
+### Get Books with Pagination
+GET {{baseUrl}}/api/books/GetAllWithPagination?pageNumber=1&pageSize=10
+Accept: {{contentType}}
+
+### Get Books with Pagination - Page 2
+GET {{baseUrl}}/api/books/GetAllWithPagination?pageNumber=2&pageSize=5
+Accept: {{contentType}}
+
+### Get Books with Pagination - Invalid Parameters (Should return 400)
+GET {{baseUrl}}/api/books/GetAllWithPagination?pageNumber=0&pageSize=0
+Accept: {{contentType}}
+
+### Get Book by ID
+GET {{baseUrl}}/api/books/1
+Accept: {{contentType}}
+
+### Get Book by ID - Not Found (Should return 404)
+GET {{baseUrl}}/api/books/999
+Accept: {{contentType}}
+
+### Get Books by Category
+GET {{baseUrl}}/api/books/get-books-by-category/1
+Accept: {{contentType}}
+
+### Get Books by Category - Invalid ID (Should return 400)
+GET {{baseUrl}}/api/books/get-books-by-category/0
+Accept: {{contentType}}
+
+### Get Books by Category - No Results (Should return 404)
+GET {{baseUrl}}/api/books/get-books-by-category/999
+Accept: {{contentType}}
+
+### Create New Book
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "The Martian",
+  "author": "Andy Weir",
+  "description": "An astronaut becomes stranded on Mars and must figure out how to survive.",
+  "value": 24.99,
+  "publishDate": "2011-09-27",
+  "categoryId": 1
+}
+
+### Create New Book - Another Example
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "Dune",
+  "author": "Frank Herbert",
+  "description": "A science fiction epic set in a distant future amid a feudal interstellar society.",
+  "value": 19.99,
+  "publishDate": "1965-08-01",
+  "categoryId": 1
+}
+
+### Create New Book - Duplicate Name (Should return 400)
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "The Martian",
+  "author": "Andy Weir",
+  "description": "Duplicate book",
+  "value": 24.99,
+  "publishDate": "2011-09-27",
+  "categoryId": 1
+}
+
+### Create New Book - Missing Required Fields (Should return 400)
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "",
+  "author": "Test Author",
+  "value": 10.00,
+  "categoryId": 1
+}
+
+### Create New Book - Fantasy
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "The Lord of the Rings",
+  "author": "J.R.R. Tolkien",
+  "description": "An epic high-fantasy novel about the quest to destroy the One Ring.",
+  "value": 29.99,
+  "publishDate": "1954-07-29",
+  "categoryId": 1
+}
+
+### Update Book
+PUT {{baseUrl}}/api/books/1
+Content-Type: {{contentType}}
+
+{
+  "id": 1,
+  "name": "The Martian - Special Edition",
+  "author": "Andy Weir",
+  "description": "An astronaut becomes stranded on Mars and must figure out how to survive. Special Edition includes bonus content.",
+  "value": 29.99,
+  "publishDate": "2011-09-27",
+  "categoryId": 1
+}
+
+### Update Book - ID Mismatch (Should return 400)
+PUT {{baseUrl}}/api/books/1
+Content-Type: {{contentType}}
+
+{
+  "id": 2,
+  "name": "The Martian",
+  "author": "Andy Weir",
+  "description": "Test",
+  "value": 24.99,
+  "publishDate": "2011-09-27",
+  "categoryId": 1
+}
+
+### Update Book - Not Found (Should return 404)
+PUT {{baseUrl}}/api/books/999
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "name": "Non-existent Book",
+  "author": "Unknown",
+  "description": "This book does not exist",
+  "value": 19.99,
+  "publishDate": "2024-01-01",
+  "categoryId": 1
+}
+
+### Update Book - Duplicate Name (Should return 400)
+PUT {{baseUrl}}/api/books/2
+Content-Type: {{contentType}}
+
+{
+  "id": 2,
+  "name": "The Martian",
+  "author": "Test",
+  "description": "Test",
+  "value": 19.99,
+  "publishDate": "2024-01-01",
+  "categoryId": 1
+}
+
+### Delete Book
+DELETE {{baseUrl}}/api/books/1
+
+### Delete Book - Not Found (Should return 404)
+DELETE {{baseUrl}}/api/books/999
+
+### Delete Book - Invalid ID (Should return 400)
+DELETE {{baseUrl}}/api/books/0
+
+### Search Books by Name
+GET {{baseUrl}}/api/books/search/martian
+Accept: {{contentType}}
+
+### Search Books by Name - Partial Match
+GET {{baseUrl}}/api/books/search/lord
+Accept: {{contentType}}
+
+### Search Books - No Results (Should return 404)
+GET {{baseUrl}}/api/books/search/xyz123notfound
+Accept: {{contentType}}
+
+### Search Books - Empty Search Term (Should return 400)
+GET {{baseUrl}}/api/books/search/
+Accept: {{contentType}}
+
+### Search Books with Category
+GET {{baseUrl}}/api/books/search-book-with-category/science
+Accept: {{contentType}}
+
+### Search Books with Category - Another Example
+GET {{baseUrl}}/api/books/search-book-with-category/fantasy
+Accept: {{contentType}}
+
+### Search Books with Category - No Results (Should return 404)
+GET {{baseUrl}}/api/books/search-book-with-category/xyz123notfound
+Accept: {{contentType}}
+
+### Search Books with Category - Empty Search Term (Should return 400)
+GET {{baseUrl}}/api/books/search-book-with-category/
+Accept: {{contentType}}
+
+###############################################################################
+# TEST SCENARIOS
+###############################################################################
+
+### Scenario 1: Create Category, Create Book, Get Book, Delete Book, Delete Category
+# Step 1: Create a new category
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": "Test Category - SciFi"
+}
+
+###
+# Step 2: Create a book in the new category (use the ID from Step 1)
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "Test Book - Foundation",
+  "author": "Isaac Asimov",
+  "description": "Test book for scenario",
+  "value": 15.99,
+  "publishDate": "1951-06-01",
+  "categoryId": 1
+}
+
+###
+# Step 3: Get the book by ID (use ID from Step 2)
+GET {{baseUrl}}/api/books/1
+Accept: {{contentType}}
+
+###
+# Step 4: Search books in category
+GET {{baseUrl}}/api/books/get-books-by-category/1
+Accept: {{contentType}}
+
+###
+# Step 5: Delete the book (use ID from Step 2)
+DELETE {{baseUrl}}/api/books/1
+
+###
+# Step 6: Delete the category (use ID from Step 1)
+DELETE {{baseUrl}}/api/categories/1
+
+###############################################################################
+# EDGE CASES & ERROR TESTING
+###############################################################################
+
+### Test: Large Page Size
+GET {{baseUrl}}/api/books/GetAllWithPagination?pageNumber=1&pageSize=1000
+Accept: {{contentType}}
+
+### Test: Negative Page Number
+GET {{baseUrl}}/api/books/GetAllWithPagination?pageNumber=-1&pageSize=10
+Accept: {{contentType}}
+
+### Test: Very Long Search Term
+GET {{baseUrl}}/api/books/search/thisisaverylongsearchtermthatprobablywontmatchanythingbutweretestingitanyway
+Accept: {{contentType}}
+
+### Test: Special Characters in Search
+GET {{baseUrl}}/api/books/search/lord's%20rings
+Accept: {{contentType}}
+
+### Test: Update with Empty Name
+PUT {{baseUrl}}/api/books/1
+Content-Type: {{contentType}}
+
+{
+  "id": 1,
+  "name": "",
+  "author": "Test Author",
+  "description": "Test",
+  "value": 10.00,
+  "publishDate": "2024-01-01",
+  "categoryId": 1
+}
+
+### Test: Create Book with Negative Price
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "Invalid Price Book",
+  "author": "Test Author",
+  "description": "This book has a negative price",
+  "value": -10.00,
+  "publishDate": "2024-01-01",
+  "categoryId": 1
+}
+
+### Test: Create Book with Future Date (May or may not be valid based on business rules)
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "Future Book",
+  "author": "Test Author",
+  "description": "This book is published in the future",
+  "value": 29.99,
+  "publishDate": "2099-12-31",
+  "categoryId": 1
+}
+
+### Test: Create Book with Non-Existent Category
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "Orphan Book",
+  "author": "Test Author",
+  "description": "This book references a category that doesn't exist",
+  "value": 19.99,
+  "publishDate": "2024-01-01",
+  "categoryId": 999
+}
+
+###############################################################################
+# PERFORMANCE TESTING
+###############################################################################
+
+### Test: Multiple Requests in Sequence
+# Request 1
+GET {{baseUrl}}/api/books
+
+###
+# Request 2
+GET {{baseUrl}}/api/categories
+
+###
+# Request 3
+GET {{baseUrl}}/api/books/1
+
+###
+# Request 4
+GET {{baseUrl}}/api/categories/1
+
+###############################################################################
+# NOTES
+###############################################################################
+
+# Expected Response Codes:
+# - 200 OK: Successful GET, PUT requests
+# - 201 Created: Successful POST (if you implement it)
+# - 204 No Content: Successful DELETE
+# - 400 Bad Request: Invalid input, validation errors
+# - 404 Not Found: Resource not found
+# - 500 Internal Server Error: Server errors
+
+# Tips for using this file:
+# 1. Update @baseUrl variable to match your environment
+# 2. Replace IDs in requests with actual IDs from your database
+# 3. Run requests in sequence for test scenarios
+# 4. Check response status codes and bodies
+# 5. Use VS Code REST Client extension for best experience
+
+# Common .http file variables:
+# {{$guid}} - Generate a GUID
+# {{$timestamp}} - Current Unix timestamp
+# {{$randomInt}} - Random integer
+
+###############################################################################

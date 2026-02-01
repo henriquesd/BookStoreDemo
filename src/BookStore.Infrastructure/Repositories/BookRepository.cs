@@ -11,17 +11,20 @@ namespace BookStore.Infrastructure.Repositories
 
         public override async Task<List<Book>> GetAll()
         {
-            return await Db.Books.AsNoTracking().Include(b => b.Category)
+            return await Db.Books
+                .AsNoTracking()
+                    .Include(b => b.Category)
                 .OrderBy(b => b.Name)
                 .ToListAsync();
         }
 
-        public async Task<PagedResponse<Book>> GetAllWithPagination(int pageNumber, int pageSize)
+        public override async Task<PagedResponse<Book>> GetAllWithPagination(int pageNumber, int pageSize)
         {
             var totalRecords = await Db.Books.AsNoTracking().CountAsync();
 
-            var books = await Db.Books.AsNoTracking()
-                .Include(b => b.Category)
+            var books = await Db.Books
+                .AsNoTracking()
+                .   Include(b => b.Category)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -33,7 +36,9 @@ namespace BookStore.Infrastructure.Repositories
 
         public override async Task<Book> GetById(int id)
         {
-            return await Db.Books.AsNoTracking().Include(b => b.Category)
+            return await Db.Books
+                .AsNoTracking()
+                    .Include(b => b.Category)
                 .Where(b => b.Id == id)
                 .FirstOrDefaultAsync();
         }
@@ -45,8 +50,9 @@ namespace BookStore.Infrastructure.Repositories
 
         public async Task<IEnumerable<Book>> SearchBookWithCategory(string searchedValue)
         {
-            return await Db.Books.AsNoTracking()
-                .Include(b => b.Category)
+            return await Db.Books
+                .AsNoTracking()
+                    .Include(b => b.Category)
                 .Where(b => b.Name.Contains(searchedValue) || 
                             b.Author.Contains(searchedValue) ||
                             b.Description.Contains(searchedValue) ||

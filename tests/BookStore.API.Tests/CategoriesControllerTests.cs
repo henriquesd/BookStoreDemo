@@ -408,9 +408,9 @@ namespace BookStore.API.Tests
             {
                 // Arrange
                 var category = _fixture.Create<Category>();
+                var operationResult = new OperationResult<bool>(true);
 
-                _categoryServiceMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
-                _categoryServiceMock.Setup(c => c.Remove(category)).ReturnsAsync(true);
+                _categoryServiceMock.Setup(c => c.Remove(category.Id)).ReturnsAsync(operationResult);
 
                 // Act
                 var result = await _categoriesController.Remove(category.Id);
@@ -424,14 +424,15 @@ namespace BookStore.API.Tests
             {
                 // Arrange
                 var category = _fixture.Create<Category>();
+                var operationResult = new OperationResult<bool>(false, $"Category with ID {category.Id} not found");
 
-                _categoryServiceMock.Setup(c => c.GetById(category.Id)).ReturnsAsync((Category)null);
+                _categoryServiceMock.Setup(c => c.Remove(category.Id)).ReturnsAsync(operationResult);
 
                 // Act
                 var result = await _categoriesController.Remove(category.Id);
 
                 // Assert
-                result.Should().BeOfType<NotFoundResult>();
+                result.Should().BeOfType<NotFoundObjectResult>();
             }
 
             [Fact]
@@ -439,15 +440,15 @@ namespace BookStore.API.Tests
             {
                 // Arrange
                 var category = _fixture.Create<Category>();
+                var operationResult = new OperationResult<bool>(false, "Cannot delete category with associated books");
 
-                _categoryServiceMock.Setup(c => c.GetById(category.Id)                ).ReturnsAsync(category);
-                _categoryServiceMock.Setup(c => c.Remove(category)).ReturnsAsync(false);
+                _categoryServiceMock.Setup(c => c.Remove(category.Id)).ReturnsAsync(operationResult);
 
                 // Act
                 var result = await _categoriesController.Remove(category.Id);
 
                 // Assert
-                result.Should().BeOfType<BadRequestResult>();
+                result.Should().BeOfType<BadRequestObjectResult>();
             }
 
             [Fact]
@@ -455,15 +456,15 @@ namespace BookStore.API.Tests
             {
                 // Arrange
                 var category = _fixture.Create<Category>();
+                var operationResult = new OperationResult<bool>(true);
 
-                _categoryServiceMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
-                _categoryServiceMock.Setup(c => c.Remove(category)).ReturnsAsync(true);
+                _categoryServiceMock.Setup(c => c.Remove(category.Id)).ReturnsAsync(operationResult);
 
                 // Act
                 await _categoriesController.Remove(category.Id);
 
                 // Assert
-                _categoryServiceMock.Verify(mock => mock.Remove(category), Times.Once);
+                _categoryServiceMock.Verify(mock => mock.Remove(category.Id), Times.Once);
             }
         }
 
@@ -475,17 +476,17 @@ namespace BookStore.API.Tests
                 // Arrange
                 var categoryList = _fixture.CreateMany<Category>();
                 var category = _fixture.Create<Category>();
+                var categoryResultDtoList = categoryList.Select(c => new CategoryResultDto { Id = c.Id, Name = c.Name }).ToList();
 
                 _categoryServiceMock.Setup(c => c.Search(category.Name))
                     .ReturnsAsync(categoryList);
-                _mapperMock.Setup(m => m.Map<List<Category>>(It.IsAny<IEnumerable<Category>>())).Returns(categoryList.ToList());
+                _mapperMock.Setup(m => m.Map<IEnumerable<CategoryResultDto>>(It.IsAny<IEnumerable<Category>>())).Returns(categoryResultDtoList);
 
                 // Act
                 var result = await _categoriesController.Search(category.Name);
-                var actual = (OkObjectResult)result.Result;
 
                 // Assert
-                actual.Should().BeOfType<OkObjectResult>();
+                result.Should().BeOfType<OkObjectResult>();
             }
 
             [Fact]
@@ -498,10 +499,9 @@ namespace BookStore.API.Tests
 
                 // Act
                 var result = await _categoriesController.Search(categoryName);
-                var actual = (NotFoundObjectResult)result.Result;
 
                 // Assert
-                actual.Should().BeOfType<NotFoundObjectResult>();
+                result.Should().BeOfType<NotFoundObjectResult>();
             }
 
             [Fact]
@@ -510,9 +510,10 @@ namespace BookStore.API.Tests
                 // Arrange
                 var category = _fixture.Create<Category>();
                 var categoryList = _fixture.CreateMany<Category>();
+                var categoryResultDtoList = categoryList.Select(c => new CategoryResultDto { Id = c.Id, Name = c.Name }).ToList();
 
                 _categoryServiceMock.Setup(c => c.Search(category.Name)).ReturnsAsync(categoryList);
-                _mapperMock.Setup(m => m.Map<List<Category>>(It.IsAny<IEnumerable<Category>>())).Returns(categoryList.ToList());
+                _mapperMock.Setup(m => m.Map<IEnumerable<CategoryResultDto>>(It.IsAny<IEnumerable<Category>>())).Returns(categoryResultDtoList);
 
                 // Act
                 await _categoriesController.Search(category.Name);

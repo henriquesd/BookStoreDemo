@@ -9,6 +9,7 @@ namespace BookStore.Domain.Interfaces
         Task<List<TEntity>> GetAll();
         Task<PagedResponse<TEntity>> GetAllWithPagination(int pageNumber, int pageSize);
         Task<TEntity> GetById(int id);
+        Task<TEntity> GetByIdAsNoTracking(int id);
         Task Update(TEntity entity);
         Task Remove(TEntity entity);
         Task<IEnumerable<TEntity>> Search(Expression<Func<TEntity, bool>> predicate);

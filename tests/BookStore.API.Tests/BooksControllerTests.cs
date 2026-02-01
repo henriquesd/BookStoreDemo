@@ -364,16 +364,14 @@ namespace BookStore.API.Tests
             {
                 // Arrange
                 var book = CreateBook();
-                var dtoExpected = MapModelToBookResultDto(book);
 
                 _bookServiceMock.Setup(c => c.GetBooksByCategory(book.CategoryId)).ReturnsAsync(new List<Book>());
-                _mapperMock.Setup(m => m.Map<BookResultDto>(It.IsAny<Book>())).Returns(dtoExpected);
 
                 // Act
                 var result = await _booksController.GetBooksByCategory(book.CategoryId);
 
                 // Assert
-                result.Should().BeOfType<NotFoundResult>();
+                result.Should().BeOfType<NotFoundObjectResult>();
             }
 
             [Fact]
@@ -404,10 +402,12 @@ namespace BookStore.API.Tests
                 var book = CreateBook();
                 var bookAddDto = new BookAddDto() { Name = book.Name };
                 var bookResultDto = MapModelToBookResultDto(book);
+                var operationResult = new OperationResult<Book>(book);
+                var mappedResult = new OperationResult<BookResultDto>(bookResultDto);
 
                 _mapperMock.Setup(m => m.Map<Book>(It.IsAny<BookAddDto>())).Returns(book);
-                _bookServiceMock.Setup(c => c.Add(book)).ReturnsAsync(book);
-                _mapperMock.Setup(m => m.Map<BookResultDto>(It.IsAny<Book>())).Returns(bookResultDto);
+                _bookServiceMock.Setup(c => c.Add(book)).ReturnsAsync(operationResult);
+                _mapperMock.Setup(m => m.Map<OperationResult<BookResultDto>>(It.IsAny<IOperationResult<Book>>())).Returns(mappedResult);
 
                 // Act
                 var result = await _booksController.Add(bookAddDto);
@@ -436,15 +436,18 @@ namespace BookStore.API.Tests
                 // Arrange
                 var book = CreateBook();
                 var bookAddDto = new BookAddDto() { Name = book.Name };
+                var operationResult = new OperationResult<Book>(false, "Book with this name already exists");
+                var mappedResult = new OperationResult<BookResultDto>(false, "Book with this name already exists");
 
                 _mapperMock.Setup(m => m.Map<Book>(It.IsAny<BookAddDto>())).Returns(book);
-                _bookServiceMock.Setup(c => c.Add(book)).ReturnsAsync((Book)null);
+                _bookServiceMock.Setup(c => c.Add(book)).ReturnsAsync(operationResult);
+                _mapperMock.Setup(m => m.Map<OperationResult<BookResultDto>>(It.IsAny<IOperationResult<Book>>())).Returns(mappedResult);
 
                 // Act
                 var result = await _booksController.Add(bookAddDto);
 
                 // Assert
-                result.Should().BeOfType<BadRequestResult>();
+                result.Should().BeOfType<BadRequestObjectResult>();
             }
 
             [Fact]
@@ -453,9 +456,13 @@ namespace BookStore.API.Tests
                 // Arrange
                 var book = CreateBook();
                 var bookAddDto = new BookAddDto() { Name = book.Name };
+                var operationResult = new OperationResult<Book>(book);
+                var bookResultDto = MapModelToBookResultDto(book);
+                var mappedResult = new OperationResult<BookResultDto>(bookResultDto);
 
                 _mapperMock.Setup(m => m.Map<Book>(It.IsAny<BookAddDto>())).Returns(book);
-                _bookServiceMock.Setup(c => c.Add(book)).ReturnsAsync(book);
+                _bookServiceMock.Setup(c => c.Add(book)).ReturnsAsync(operationResult);
+                _mapperMock.Setup(m => m.Map<OperationResult<BookResultDto>>(It.IsAny<IOperationResult<Book>>())).Returns(mappedResult);
 
                 // Act
                 await _booksController.Add(bookAddDto);
@@ -473,10 +480,14 @@ namespace BookStore.API.Tests
                 // Arrange
                 var book = CreateBook();
                 var bookEditDto = new BookEditDto() { Id = book.Id, Name = "Test" };
+                var operationResult = new OperationResult<Book>(book);
+                var bookResultDto = MapModelToBookResultDto(book);
+                var mappedResult = new OperationResult<BookResultDto>(bookResultDto);
 
                 _mapperMock.Setup(m => m.Map<Book>(It.IsAny<BookEditDto>())).Returns(book);
                 _bookServiceMock.Setup(c => c.GetById(book.Id)).ReturnsAsync(book);
-                _bookServiceMock.Setup(c => c.Update(book)).ReturnsAsync(book);
+                _bookServiceMock.Setup(c => c.Update(book)).ReturnsAsync(operationResult);
+                _mapperMock.Setup(m => m.Map<OperationResult<BookResultDto>>(It.IsAny<IOperationResult<Book>>())).Returns(mappedResult);
 
                 // Act
                 var result = await _booksController.Update(bookEditDto.Id, bookEditDto);
@@ -518,10 +529,14 @@ namespace BookStore.API.Tests
                 // Arrange
                 var book = CreateBook();
                 var bookEditDto = new BookEditDto() { Id = book.Id, Name = "Test" };
+                var operationResult = new OperationResult<Book>(book);
+                var bookResultDto = MapModelToBookResultDto(book);
+                var mappedResult = new OperationResult<BookResultDto>(bookResultDto);
 
                 _mapperMock.Setup(m => m.Map<Book>(It.IsAny<BookEditDto>())).Returns(book);
                 _bookServiceMock.Setup(c => c.GetById(book.Id)).ReturnsAsync(book);
-                _bookServiceMock.Setup(c => c.Update(book)).ReturnsAsync(book);
+                _bookServiceMock.Setup(c => c.Update(book)).ReturnsAsync(operationResult);
+                _mapperMock.Setup(m => m.Map<OperationResult<BookResultDto>>(It.IsAny<IOperationResult<Book>>())).Returns(mappedResult);
 
                 // Act
                 await _booksController.Update(bookEditDto.Id, bookEditDto);
@@ -538,14 +553,14 @@ namespace BookStore.API.Tests
             {
                 // Arrange
                 var book = CreateBook();
-                _bookServiceMock.Setup(c => c.GetById(book.Id)).ReturnsAsync(book);
-                _bookServiceMock.Setup(c => c.Remove(book)).ReturnsAsync(true);
+                var operationResult = new OperationResult<bool>(true);
+                _bookServiceMock.Setup(c => c.Remove(book.Id)).ReturnsAsync(operationResult);
 
                 // Act
                 var result = await _booksController.Remove(book.Id);
 
                 // Assert
-                result.Should().BeOfType<OkResult>();
+                result.Should().BeOfType<NoContentResult>();
             }
 
             [Fact]
@@ -553,13 +568,14 @@ namespace BookStore.API.Tests
             {
                 // Arrange
                 var book = CreateBook();
-                _bookServiceMock.Setup(c => c.GetById(book.Id)).ReturnsAsync((Book)null);
+                var operationResult = new OperationResult<bool>(false, $"Book with ID {book.Id} not found");
+                _bookServiceMock.Setup(c => c.Remove(book.Id)).ReturnsAsync(operationResult);
 
                 // Act
                 var result = await _booksController.Remove(book.Id);
 
                 // Assert
-                result.Should().BeOfType<NotFoundResult>();
+                result.Should().BeOfType<NotFoundObjectResult>();
             }
 
             [Fact]
@@ -567,14 +583,14 @@ namespace BookStore.API.Tests
             {
                 // Arrange
                 var book = CreateBook();
-                _bookServiceMock.Setup(c => c.GetById(book.Id)).ReturnsAsync(book);
-                _bookServiceMock.Setup(c => c.Remove(book)).ReturnsAsync(true);
+                var operationResult = new OperationResult<bool>(true);
+                _bookServiceMock.Setup(c => c.Remove(book.Id)).ReturnsAsync(operationResult);
 
                 // Act
                 await _booksController.Remove(book.Id);
 
                 // Assert
-                _bookServiceMock.Verify(mock => mock.Remove(book), Times.Once);
+                _bookServiceMock.Verify(mock => mock.Remove(book.Id), Times.Once);
             }
         }
 
@@ -586,17 +602,16 @@ namespace BookStore.API.Tests
                 // Arrange
                 var bookList = CreateBookList();
                 var book = CreateBook();
+                var bookResultDtoList = bookList.Select(MapModelToBookResultDto).ToList();
 
                 _bookServiceMock.Setup(c => c.Search(book.Name)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<List<Book>>(It.IsAny<IEnumerable<Book>>())).Returns(bookList);
+                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<IEnumerable<Book>>())).Returns(bookResultDtoList);
 
                 // Act
                 var result = await _booksController.Search(book.Name);
-                var actual = (OkObjectResult)result.Result;
 
                 // Assert
-                actual.Should().NotBeNull();
-                actual.Should().BeOfType<OkObjectResult>();
+                result.Should().BeOfType<OkObjectResult>();
             }
 
             [Fact]
@@ -606,19 +621,13 @@ namespace BookStore.API.Tests
                 var book = CreateBook();
                 var bookList = new List<Book>();
 
-                var dtoExpected = MapModelToBookResultDto(book);
-                book.Name = dtoExpected.Name;
-
                 _bookServiceMock.Setup(c => c.Search(book.Name)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<Book>>(It.IsAny<Book>())).Returns(bookList);
 
                 // Act
                 var result = await _booksController.Search(book.Name);
-                var actual = (NotFoundObjectResult)result.Result;
 
                 // Assert
-                actual.Should().NotBeNull();
-                actual.Should().BeOfType<NotFoundObjectResult>();
+                result.Should().BeOfType<NotFoundObjectResult>();
             }
 
             [Fact]
@@ -627,9 +636,10 @@ namespace BookStore.API.Tests
                 // Arrange
                 var bookList = CreateBookList();
                 var book = CreateBook();
+                var bookResultDtoList = bookList.Select(MapModelToBookResultDto).ToList();
 
                 _bookServiceMock.Setup(c => c.Search(book.Name)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<List<Book>>(It.IsAny<IEnumerable<Book>>())).Returns(bookList);
+                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<IEnumerable<Book>>())).Returns(bookResultDtoList);
 
                 // Act
                 await _booksController.Search(book.Name);
@@ -650,16 +660,13 @@ namespace BookStore.API.Tests
                 var bookResultList = MapModelToBookResultListDto(bookList);
 
                 _bookServiceMock.Setup(c => c.SearchBookWithCategory(book.Name)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<Book>>(It.IsAny<List<Book>>())).Returns(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<List<Book>>())).Returns(bookResultList);
+                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<IEnumerable<Book>>())).Returns(bookResultList);
 
                 // Act
                 var result = await _booksController.SearchBookWithCategory(book.Name);
-                var actual = (OkObjectResult)result.Result;
 
                 // Assert
-                actual.Should().NotBeNull();
-                actual.Should().BeOfType<OkObjectResult>();
+                result.Should().BeOfType<OkObjectResult>();
             }
 
             [Fact]
@@ -670,15 +677,12 @@ namespace BookStore.API.Tests
                 var bookList = new List<Book>();
 
                 _bookServiceMock.Setup(c => c.SearchBookWithCategory(book.Name)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<Book>>(It.IsAny<List<Book>>())).Returns(bookList);
 
                 // Act
                 var result = await _booksController.SearchBookWithCategory(book.Name);
-                var actual = (NotFoundObjectResult)result.Result;
 
                 // Assert
-                actual.Value.Equals("None book was founded");
-                actual.Should().BeOfType<NotFoundObjectResult>();
+                result.Should().BeOfType<NotFoundObjectResult>();
             }
 
             [Fact]
@@ -690,8 +694,7 @@ namespace BookStore.API.Tests
                 var bookResultList = MapModelToBookResultListDto(bookList);
 
                 _bookServiceMock.Setup(c => c.SearchBookWithCategory(book.Name)).ReturnsAsync(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<Book>>(It.IsAny<List<Book>>())).Returns(bookList);
-                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<List<Book>>())).Returns(bookResultList);
+                _mapperMock.Setup(m => m.Map<IEnumerable<BookResultDto>>(It.IsAny<IEnumerable<Book>>())).Returns(bookResultList);
 
                 // Act
                 await _booksController.SearchBookWithCategory(book.Name);

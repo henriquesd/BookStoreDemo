@@ -33,7 +33,10 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
         {
-            if (pageNumber <= 0 || pageSize <= 0) return BadRequest();
+            if (pageNumber <= 0 || pageSize <= 0)
+            {
+                return BadRequest();
+            }
 
             var paginatedBooks = await _bookService.GetAllWithPagination(pageNumber, pageSize);
 
@@ -49,7 +52,10 @@ namespace BookStore.API.Controllers
         {
             var book = await _bookService.GetById(id);
 
-            if (book == null) return NotFound();
+            if (book == null)
+            {
+                return NotFound();
+            }
 
             return Ok(_mapper.Map<BookResultDto>(book));
         }
@@ -58,79 +64,131 @@ namespace BookStore.API.Controllers
         [Route("get-books-by-category/{categoryId:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetBooksByCategory(int categoryId)
         {
+            if (categoryId <= 0)
+            {
+                return BadRequest(new { message = "Invalid category ID" });
+            }
+
             var books = await _bookService.GetBooksByCategory(categoryId);
 
-            if (!books.Any()) return NotFound();
+            if (!books.Any())
+            {
+                return NotFound(new { message = "No books found for this category" });
+            }
 
             return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
         }
 
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(OperationResult<BookResultDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(OperationResult<BookResultDto>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Add(BookAddDto bookDto)
         {
-            if (!ModelState.IsValid) return BadRequest();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
 
             var book = _mapper.Map<Book>(bookDto);
             var bookResult = await _bookService.Add(book);
 
-            if (bookResult == null) return BadRequest();
+            var result = _mapper.Map<OperationResult<BookResultDto>>(bookResult);
 
-            return Ok(_mapper.Map<BookResultDto>(bookResult));
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
         }
 
         [HttpPut("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(OperationResult<BookResultDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(OperationResult<BookResultDto>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Update(int id, BookEditDto bookDto)
         {
-            if (id != bookDto.Id) return BadRequest();
+            if (id != bookDto.Id)
+            {
+                return BadRequest();
+            }
 
-            if (!ModelState.IsValid) return BadRequest();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
 
-            await _bookService.Update(_mapper.Map<Book>(bookDto));
+            var book = _mapper.Map<Book>(bookDto);
+            var bookResult = await _bookService.Update(book);
 
-            return Ok(bookDto);
+            var result = _mapper.Map<OperationResult<BookResultDto>>(bookResult);
+
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
         }
 
         [HttpDelete("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Remove(int id)
         {
-            var book = await _bookService.GetById(id);
-            if (book == null) return NotFound();
+            var result = await _bookService.Remove(id);
 
-            await _bookService.Remove(book);
+            if (!result.Success)
+            {
+                return result.Message.Contains("not found")
+                    ? NotFound(new { message = result.Message })
+                    : BadRequest(new { message = result.Message });
+            }
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpGet]
         [Route("search/{bookName}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<List<Book>>> Search(string bookName)
+        public async Task<IActionResult> Search(string bookName)
         {
-            var books = _mapper.Map<List<Book>>(await _bookService.Search(bookName));
+            if (string.IsNullOrWhiteSpace(bookName))
+            {
+                return BadRequest(new { message = "Search term is required" });
+            }
 
-            if (books == null || books.Count == 0) return NotFound("None book was founded");
+            var books = await _bookService.Search(bookName);
 
-            return Ok(books);
+            if (!books.Any())
+            {
+                return NotFound(new { message = "No books were found" });
+            }
+
+            return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
         }
 
         [HttpGet]
         [Route("search-book-with-category/{searchedValue}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<List<Book>>> SearchBookWithCategory(string searchedValue)
+        public async Task<IActionResult> SearchBookWithCategory(string searchedValue)
         {
-            var books = _mapper.Map<List<Book>>(await _bookService.SearchBookWithCategory(searchedValue));
+            if (string.IsNullOrWhiteSpace(searchedValue))
+            {
+                return BadRequest(new { message = "Search term is required" });
+            }
 
-            if (!books.Any()) return NotFound("None book was founded");
+            var books = await _bookService.SearchBookWithCategory(searchedValue);
+
+            if (!books.Any())
+            {
+                return NotFound(new { message = "No books were found" });
+            }
 
             return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
         }

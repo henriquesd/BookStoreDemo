@@ -33,7 +33,8 @@ namespace BookStore.Infrastructure.Repositories
         {
             var totalRecords = await Db.Set<TEntity>().AsNoTracking().CountAsync();
 
-            var entities = await Db.Set<TEntity>().AsNoTracking()
+            var entities = await Db.Set<TEntity>()
+                .AsNoTracking()
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -42,10 +43,14 @@ namespace BookStore.Infrastructure.Repositories
 
             return pagedResponse;
         }
-
         public virtual async Task<TEntity> GetById(int id)
         {
             return await DbSet.FindAsync(id);
+        }
+
+        public virtual async Task<TEntity> GetByIdAsNoTracking(int id)
+        {
+            return await DbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
         }
         
         public virtual async Task Update(TEntity entity)

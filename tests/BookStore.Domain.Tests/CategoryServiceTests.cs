@@ -252,6 +252,8 @@ namespace BookStore.Domain.Tests
                 _categoryRepositoryMock.Setup(c =>
                     c.Search(c => c.Name == category.Name && c.Id != category.Id))
                     .ReturnsAsync(new List<Category>());
+                _categoryRepositoryMock.Setup(c => c.GetByIdAsNoTracking(category.Id))
+                    .ReturnsAsync(category);
                 _categoryRepositoryMock.Setup(c => c.Update(category));
 
                 // Act
@@ -274,6 +276,8 @@ namespace BookStore.Domain.Tests
                 _categoryRepositoryMock.Setup(c =>
                         c.Search(c => c.Name == category.Name && c.Id != category.Id))
                     .ReturnsAsync(categoryList);
+                _categoryRepositoryMock.Setup(c => c.GetByIdAsNoTracking(category.Id))
+                    .ReturnsAsync(category);
 
                 // Act
                 var result = await _categoryService.Update(category);
@@ -281,7 +285,7 @@ namespace BookStore.Domain.Tests
                 // Assert
                 result.Should().NotBeNull();
                 result.Success.Should().BeFalse();
-                result.Payload.Should().NotBeNull();
+                result.Message.Should().NotBeNullOrEmpty();
             }
 
 
@@ -295,6 +299,8 @@ namespace BookStore.Domain.Tests
                 _categoryRepositoryMock.Setup(c =>
                         c.Search(c => c.Name == category.Name && c.Id != category.Id))
                     .ReturnsAsync(categoryList);
+                _categoryRepositoryMock.Setup(c => c.GetByIdAsNoTracking(category.Id))
+                    .ReturnsAsync(category);
 
                 // Act
                 var result = await _categoryService.Update(category);
@@ -302,7 +308,7 @@ namespace BookStore.Domain.Tests
                 // Assert
                 result.Should().NotBeNull();
                 result.Success.Should().BeFalse();
-                result.Payload.Should().NotBeNull();
+                result.Message.Should().NotBeNullOrEmpty();
             }
 
             [Fact]
@@ -314,6 +320,8 @@ namespace BookStore.Domain.Tests
                 _categoryRepositoryMock.Setup(c =>
                         c.Search(c => c.Name == category.Name && c.Id != category.Id))
                     .ReturnsAsync(new List<Category>());
+                _categoryRepositoryMock.Setup(c => c.GetByIdAsNoTracking(category.Id))
+                    .ReturnsAsync(category);
 
                 // Act
                 await _categoryService.Update(category);
@@ -331,14 +339,15 @@ namespace BookStore.Domain.Tests
                 // Arrange
                 var category = _fixture.Create<Category>();
 
+                _categoryRepositoryMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
                 _bookService.Setup(b =>
                     b.GetBooksByCategory(category.Id)).ReturnsAsync(new List<Book>());
 
                 // Act
-                var result = await _categoryService.Remove(category);
+                var result = await _categoryService.Remove(category.Id);
 
                 // Assert
-                result.Should().BeTrue();
+                result.Success.Should().BeTrue();
             }
 
             [Fact]
@@ -351,13 +360,15 @@ namespace BookStore.Domain.Tests
                     .With(p => p.CategoryId, category.Id)
                     .CreateMany();
 
+                _categoryRepositoryMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
                 _bookService.Setup(b => b.GetBooksByCategory(category.Id)).ReturnsAsync(books);
 
                 // Act
-                var result = await _categoryService.Remove(category);
+                var result = await _categoryService.Remove(category.Id);
 
                 // Assert
-                result.Should().BeFalse();
+                result.Success.Should().BeFalse();
+                result.Message.Should().Contain("associated books");
             }
 
             [Fact]
@@ -366,11 +377,12 @@ namespace BookStore.Domain.Tests
                 // Arrange
                 var category = _fixture.Create<Category>();
 
+                _categoryRepositoryMock.Setup(c => c.GetById(category.Id)).ReturnsAsync(category);
                 _bookService.Setup(b =>
                     b.GetBooksByCategory(category.Id)).ReturnsAsync(new List<Book>());
 
                 // Act
-                await _categoryService.Remove(category);
+                await _categoryService.Remove(category.Id);
 
                 // Assert
                 _categoryRepositoryMock.Verify(mock => mock.Remove(category), Times.Once);

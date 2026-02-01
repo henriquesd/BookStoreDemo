@@ -35,7 +35,10 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
         {
-            if (pageNumber <= 0 || pageSize <= 0) return BadRequest();
+            if (pageNumber <= 0 || pageSize <= 0)
+            {
+                return BadRequest();
+            }
 
             var paginatedCategories = await _categoryService.GetAllWithPagination(pageNumber, pageSize);
 
@@ -51,7 +54,10 @@ namespace BookStore.API.Controllers
         {
             var category = await _categoryService.GetById(id);
 
-            if (category == null) return NotFound();
+            if (category == null)
+            {
+                return NotFound();
+            }
 
             var categoryResultDto = _mapper.Map<CategoryResultDto>(category);
 
@@ -63,14 +69,20 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(typeof(OperationResult<CategoryResultDto>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Add(CategoryAddDto categoryDto)
         {
-            if (!ModelState.IsValid) return BadRequest();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
 
             var category = _mapper.Map<Category>(categoryDto);
             var categoryResult = await _categoryService.Add(category);
-            
+
             var result = _mapper.Map<OperationResult<CategoryResultDto>>(categoryResult);
 
-            if (!result.Success) return BadRequest(result);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
 
             return Ok(result);
         }
@@ -80,16 +92,26 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Update(int id, CategoryEditDto categoryDto)
         {
-            if (id != categoryDto.Id) return BadRequest();
-            if (!ModelState.IsValid) return BadRequest();
+            if (id != categoryDto.Id)
+            {
+                return BadRequest();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
 
             var category = _mapper.Map<Category>(categoryDto);
-            
+
             var categoryResult = await _categoryService.Update(category);
 
             var result = _mapper.Map<OperationResult<CategoryResultDto>>(categoryResult);
 
-            if (!result.Success) return BadRequest(result);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
 
             return Ok(result);
         }
@@ -97,14 +119,17 @@ namespace BookStore.API.Controllers
         [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Remove(int id)
         {
-            var category = await _categoryService.GetById(id);
-            if (category == null) return NotFound();
+            var result = await _categoryService.Remove(id);
 
-            var result = await _categoryService.Remove(category);
-
-            if (!result) return BadRequest();
+            if (!result.Success)
+            {
+                return result.Message.Contains("not found")
+                    ? NotFound(new { message = result.Message })
+                    : BadRequest(new { message = result.Message });
+            }
 
             return NoContent();
         }
@@ -113,13 +138,22 @@ namespace BookStore.API.Controllers
         [Route("search/{category}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<List<Category>>> Search(string category)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Search(string category)
         {
+            if (string.IsNullOrWhiteSpace(category))
+            {
+                return BadRequest(new { message = "Search term is required" });
+            }
+
             var categories = await _categoryService.Search(category);
 
-            if (!categories.Any()) return NotFound("None category was founded");
+            if (!categories.Any())
+            {
+                return NotFound(new { message = "No categories were found" });
+            }
 
-            return Ok(categories);
+            return Ok(_mapper.Map<IEnumerable<CategoryResultDto>>(categories));
         }
     }
 }

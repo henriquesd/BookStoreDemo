@@ -412,7 +412,8 @@ namespace BookStore.Domain.Tests
 
                 // Assert
                 result.Should().NotBeNull();
-                result.Should().BeOfType<Book>();
+                result.Success.Should().BeTrue();
+                result.Payload.Should().BeOfType<Book>();
             }
 
             [Fact]
@@ -430,7 +431,9 @@ namespace BookStore.Domain.Tests
                 var result = await _bookService.Add(book);
 
                 // Assert
-                result.Should().BeNull();
+                result.Should().NotBeNull();
+                result.Success.Should().BeFalse();
+                result.Message.Should().NotBeNullOrEmpty();
             }
 
             [Fact]
@@ -463,6 +466,8 @@ namespace BookStore.Domain.Tests
                 _bookRepositoryMock.Setup(c =>
                     c.Search(c => c.Name == book.Name && c.Id != book.Id))
                     .ReturnsAsync(new List<Book>());
+                _bookRepositoryMock.Setup(c => c.GetByIdAsNoTracking(book.Id))
+                    .ReturnsAsync(book);
                 _bookRepositoryMock.Setup(c => c.Update(book));
 
                 // Act
@@ -470,7 +475,8 @@ namespace BookStore.Domain.Tests
 
                 // Assert
                 result.Should().NotBeNull();
-                result.Should().BeOfType<Book>();
+                result.Success.Should().BeTrue();
+                result.Payload.Should().BeOfType<Book>();
             }
 
             [Fact]
@@ -491,12 +497,16 @@ namespace BookStore.Domain.Tests
                 _bookRepositoryMock.Setup(c =>
                     c.Search(c => c.Name == book.Name && c.Id != book.Id))
                     .ReturnsAsync(bookList);
+                _bookRepositoryMock.Setup(c => c.GetByIdAsNoTracking(book.Id))
+                    .ReturnsAsync(book);
 
                 // Act
                 var result = await _bookService.Update(book);
 
                 // Assert
-                result.Should().BeNull();
+                result.Should().NotBeNull();
+                result.Success.Should().BeFalse();
+                result.Message.Should().NotBeNullOrEmpty();
             }
 
             [Fact]
@@ -508,6 +518,8 @@ namespace BookStore.Domain.Tests
                 _bookRepositoryMock.Setup(c =>
                         c.Search(c => c.Name == book.Name && c.Id != book.Id))
                     .ReturnsAsync(new List<Book>());
+                _bookRepositoryMock.Setup(c => c.GetByIdAsNoTracking(book.Id))
+                    .ReturnsAsync(book);
 
                 // Act
                 await _bookService.Update(book);
@@ -524,12 +536,13 @@ namespace BookStore.Domain.Tests
             {
                 // Arrange
                 var book = CreateBook();
+                _bookRepositoryMock.Setup(s => s.GetById(book.Id)).ReturnsAsync(book);
 
                 // Act
-                var result = await _bookService.Remove(book);
+                var result = await _bookService.Remove(book.Id);
 
                 // Assert
-                result.Should().BeTrue();
+                result.Success.Should().BeTrue();
             }
 
             [Fact]
@@ -537,9 +550,10 @@ namespace BookStore.Domain.Tests
             {
                 // Arrange
                 var book = CreateBook();
+                _bookRepositoryMock.Setup(s => s.GetById(book.Id)).ReturnsAsync(book);
 
                 // Act
-                await _bookService.Remove(book);
+                await _bookService.Remove(book.Id);
 
                 // Assert
                 _bookRepositoryMock.Verify(mock => mock.Remove(book), Times.Once);

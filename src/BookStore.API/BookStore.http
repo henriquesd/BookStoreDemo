@@ -1,0 +1,295 @@
+@baseUrl = https://localhost:44382
+@contentType = application/json
+
+###############################################################################
+# BookStore API - HTTP Request Collection
+
+# Dynamic Variables:
+# {{$timestamp}}  - Unix timestamp (RECOMMENDED - unique & readable)
+# {{$randomInt}}  - Random integer 0-1000
+# {{$guid}}       - Unique GUID
+###############################################################################
+
+###############################################################################
+# CATEGORIES API
+###############################################################################
+
+### Get All Categories
+GET {{baseUrl}}/api/categories
+Accept: {{contentType}}
+
+### Get Categories with Pagination
+GET {{baseUrl}}/api/categories/GetAllWithPagination?pageNumber=1&pageSize=10
+Accept: {{contentType}}
+
+### Get Category by ID
+GET {{baseUrl}}/api/categories/1
+Accept: {{contentType}}
+
+### Get Category by ID - Not Found (ERROR TEST - Should return 404)
+GET {{baseUrl}}/api/categories/999
+Accept: {{contentType}}
+
+### Create Category
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": "Category_{{$timestamp}}"
+}
+
+### Create Category - Missing Name (ERROR TEST - Should return 400)
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": ""
+}
+
+### Update Category - Full Workflow (SAFE)
+# Step 1: Create category to update
+# @name catToUpdate
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": "ToUpdate_{{$timestamp}}"
+}
+
+###
+# Step 2: Capture ID and update
+@updateCatId = {{catToUpdate.response.body.$.payload.id}}
+
+###
+PUT {{baseUrl}}/api/categories/{{updateCatId}}
+Content-Type: {{contentType}}
+
+{
+  "id": {{updateCatId}},
+  "name": "Updated_{{$timestamp}}"
+}
+
+### Update Category - ID Mismatch (ERROR TEST - Should return 400)
+PUT {{baseUrl}}/api/categories/1
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "name": "Mismatched ID Test"
+}
+
+### Update Category - Not Found (ERROR TEST - Should return 404)
+PUT {{baseUrl}}/api/categories/999
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "name": "Non-existent Category"
+}
+
+### Delete Category - Full Workflow (SAFE)
+# Step 1: Create category to delete
+# @name catToDelete
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": "ToDelete_{{$timestamp}}"
+}
+
+###
+# Step 2: Delete it
+@deleteCatId = {{catToDelete.response.body.$.payload.id}}
+
+###
+DELETE {{baseUrl}}/api/categories/{{deleteCatId}}
+
+### Delete Category - Not Found (ERROR TEST - Should return 404)
+DELETE {{baseUrl}}/api/categories/999
+
+### Search Categories
+GET {{baseUrl}}/api/categories/search/fiction
+Accept: {{contentType}}
+
+### Search Categories - No Results (Should return 404)
+GET {{baseUrl}}/api/categories/search/XYZ999NOTFOUND
+Accept: {{contentType}}
+
+###############################################################################
+# BOOKS API
+###############################################################################
+
+### Get All Books
+GET {{baseUrl}}/api/books
+Accept: {{contentType}}
+
+### Get Books with Pagination
+GET {{baseUrl}}/api/books/GetAllWithPagination?pageNumber=1&pageSize=10
+Accept: {{contentType}}
+
+### Get Books with Pagination - Invalid Parameters (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/GetAllWithPagination?pageNumber=0&pageSize=0
+Accept: {{contentType}}
+
+### Get Book by ID
+GET {{baseUrl}}/api/books/1
+Accept: {{contentType}}
+
+### Get Book by ID - Not Found (ERROR TEST - Should return 404)
+GET {{baseUrl}}/api/books/999
+Accept: {{contentType}}
+
+### Get Books by Category
+GET {{baseUrl}}/api/books/get-books-by-category/1
+Accept: {{contentType}}
+
+### Get Books by Category - Invalid ID (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/get-books-by-category/0
+Accept: {{contentType}}
+
+### Get Books by Category - No Results (Should return 404)
+GET {{baseUrl}}/api/books/get-books-by-category/999
+Accept: {{contentType}}
+
+### Create Book - With Timestamp Name (SAFE)
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "Book_{{$timestamp}}",
+  "author": "Author {{$randomInt}}",
+  "description": "Auto-generated test book created",
+  "value": {{$randomInt}}.99,
+  "publishDate": "2024-01-15",
+  "categoryId": 1
+}
+
+### Create Book - Missing Required Fields (ERROR TEST - Should return 400)
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "",
+  "author": "Test Author",
+  "value": 10.00,
+  "categoryId": 1
+}
+
+### Update Book - Full Workflow (SAFE)
+# Step 1: Create book to update
+# @name bookToUpdate
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "ToUpdate_{{$timestamp}}",
+  "author": "Test Author",
+  "description": "Original description",
+  "value": 19.99,
+  "publishDate": "2024-01-15",
+  "categoryId": 1
+}
+
+###
+# Step 2: Capture ID and update
+@updateBookId = {{bookToUpdate.response.body.$.payload.id}}
+
+###
+PUT {{baseUrl}}/api/books/{{updateBookId}}
+Content-Type: {{contentType}}
+
+{
+  "id": {{updateBookId}},
+  "name": "Updated_{{$timestamp}}",
+  "author": "Test Author",
+  "description": "Updated description",
+  "value": 29.99,
+  "publishDate": "2024-01-15",
+  "categoryId": 1
+}
+
+### Update Book - ID Mismatch (ERROR TEST - Should return 400)
+PUT {{baseUrl}}/api/books/1
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "name": "Mismatched ID",
+  "author": "Test",
+  "description": "Test",
+  "value": 19.99,
+  "publishDate": "2024-01-01",
+  "categoryId": 1
+}
+
+### Update Book - Not Found (ERROR TEST - Should return 404)
+PUT {{baseUrl}}/api/books/999
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "name": "Non-existent Book",
+  "author": "Unknown",
+  "description": "This book does not exist",
+  "value": 19.99,
+  "publishDate": "2024-01-01",
+  "categoryId": 1
+}
+
+### Update Book - Empty Name (ERROR TEST - Should return 400)
+PUT {{baseUrl}}/api/books/1
+Content-Type: {{contentType}}
+
+{
+  "id": 1,
+  "name": "",
+  "author": "Test Author",
+  "description": "Test",
+  "value": 10.00,
+  "publishDate": "2024-01-01",
+  "categoryId": 1
+}
+
+### Delete Book - Full Workflow (SAFE)
+# Step 1: Create book to delete
+# @name bookToDelete
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "ToDelete_{{$timestamp}}",
+  "author": "Test Author",
+  "description": "This book will be deleted",
+  "value": 15.99,
+  "publishDate": "2024-01-15",
+  "categoryId": 1
+}
+
+###
+# Step 2: Delete it
+@deleteBookId = {{bookToDelete.response.body.$.payload.id}}
+
+###
+DELETE {{baseUrl}}/api/books/{{deleteBookId}}
+
+### Delete Book - Not Found (ERROR TEST - Should return 404)
+DELETE {{baseUrl}}/api/books/999
+
+### Delete Book - Invalid ID (ERROR TEST - Should return 400)
+DELETE {{baseUrl}}/api/books/0
+
+### Search Books by Name
+GET {{baseUrl}}/api/books/search/martian
+Accept: {{contentType}}
+
+### Search Books - No Results (Should return 404)
+GET {{baseUrl}}/api/books/search/XYZ999NOTFOUND
+Accept: {{contentType}}
+
+### Search Books with Category
+GET {{baseUrl}}/api/books/search-book-with-category/science
+Accept: {{contentType}}
+
+### Search Books with Category - No Results (Should return 404)
+GET {{baseUrl}}/api/books/search-book-with-category/XYZ999NOTFOUND
+Accept: {{contentType}}
