@@ -9,8 +9,6 @@ builder.Services.AddDbContext<BookStoreDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
-builder.Services.AddAutoMapper(typeof(Program));
-
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
