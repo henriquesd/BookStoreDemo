@@ -8,10 +8,7 @@ namespace BookStore.API.Mappings
     {
         public static Category ToModel(this CategoryAddDto dto)
         {
-            if (dto == null)
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(dto);
 
             return new Category
             {
@@ -21,10 +18,7 @@ namespace BookStore.API.Mappings
 
         public static Category ToModel(this CategoryEditDto dto)
         {
-            if (dto == null)
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(dto);
 
             return new Category
             {
@@ -35,10 +29,7 @@ namespace BookStore.API.Mappings
 
         public static CategoryResultDto ToDto(this Category model)
         {
-            if (model == null)
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(model);
 
             return new CategoryResultDto
             {
@@ -49,20 +40,14 @@ namespace BookStore.API.Mappings
 
         public static IEnumerable<CategoryResultDto> ToDto(this IEnumerable<Category> models)
         {
-            if (models == null)
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(models);
 
             return models.Select(m => m.ToDto()).ToList();
         }
 
         public static OperationResult<CategoryResultDto> ToDto(this IOperationResult<Category> operationResult)
         {
-            if (operationResult == null)
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(operationResult);
 
             return new OperationResult<CategoryResultDto>(
                 operationResult.Payload?.ToDto(),

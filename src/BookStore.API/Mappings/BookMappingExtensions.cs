@@ -8,10 +8,7 @@ namespace BookStore.API.Mappings
     {
         public static Book ToModel(this BookAddDto dto)
         {
-            if (dto == null)
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(dto);
 
             return new Book
             {
@@ -26,10 +23,7 @@ namespace BookStore.API.Mappings
 
         public static Book ToModel(this BookEditDto dto)
         {
-            if (dto == null)
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(dto);
 
             return new Book
             {
@@ -45,10 +39,7 @@ namespace BookStore.API.Mappings
 
         public static BookResultDto ToDto(this Book model)
         {
-            if (model == null)
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(model);
 
             return new BookResultDto
             {
@@ -65,20 +56,14 @@ namespace BookStore.API.Mappings
 
         public static IEnumerable<BookResultDto> ToDto(this IEnumerable<Book> models)
         {
-            if (models == null)
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(models);
 
             return models.Select(m => m.ToDto()).ToList();
         }
 
         public static OperationResult<BookResultDto> ToDto(this IOperationResult<Book> operationResult)
         {
-            if (operationResult == null)
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(operationResult);
 
             return new OperationResult<BookResultDto>(
                 operationResult.Payload?.ToDto(),

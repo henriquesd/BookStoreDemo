@@ -25,6 +25,7 @@ namespace BookStore.Infrastructure.Repositories
             var books = await Db.Books
                 .AsNoTracking()
                 .Include(b => b.Category)
+                .OrderBy(b => b.Name)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(ct);

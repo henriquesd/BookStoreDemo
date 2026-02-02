@@ -34,16 +34,16 @@ namespace BookStore.API.Tests.Mappings
             }
 
             [Fact]
-            public void CategoryAddDto_ToModel_WithNull_ShouldReturnNull()
+            public void CategoryAddDto_ToModel_WithNull_ShouldThrowArgumentNullException()
             {
                 // Arrange
-                CategoryAddDto dto = null;
+                CategoryAddDto? dto = null;
 
                 // Act
-                var model = dto.ToModel();
+                var act = () => dto!.ToModel();
 
                 // Assert
-                model.Should().BeNull();
+                act.Should().Throw<ArgumentNullException>().WithParameterName("dto");
             }
 
             [Fact]
@@ -62,16 +62,16 @@ namespace BookStore.API.Tests.Mappings
             }
 
             [Fact]
-            public void CategoryEditDto_ToModel_WithNull_ShouldReturnNull()
+            public void CategoryEditDto_ToModel_WithNull_ShouldThrowArgumentNullException()
             {
                 // Arrange
-                CategoryEditDto dto = null;
+                CategoryEditDto? dto = null;
 
                 // Act
-                var model = dto.ToModel();
+                var act = () => dto!.ToModel();
 
                 // Assert
-                model.Should().BeNull();
+                act.Should().Throw<ArgumentNullException>().WithParameterName("dto");
             }
         }
 
@@ -93,16 +93,16 @@ namespace BookStore.API.Tests.Mappings
             }
 
             [Fact]
-            public void Category_ToDto_WithNull_ShouldReturnNull()
+            public void Category_ToDto_WithNull_ShouldThrowArgumentNullException()
             {
                 // Arrange
-                Category model = null;
+                Category? model = null;
 
                 // Act
-                var dto = model.ToDto();
+                var act = () => model!.ToDto();
 
                 // Assert
-                dto.Should().BeNull();
+                act.Should().Throw<ArgumentNullException>().WithParameterName("model");
             }
 
             [Fact]
@@ -126,16 +126,16 @@ namespace BookStore.API.Tests.Mappings
             }
 
             [Fact]
-            public void CategoryList_ToDto_WithNull_ShouldReturnNull()
+            public void CategoryList_ToDto_WithNull_ShouldThrowArgumentNullException()
             {
                 // Arrange
-                IEnumerable<Category> models = null;
+                IEnumerable<Category>? models = null;
 
                 // Act
-                var dtos = models.ToDto();
+                var act = () => models!.ToDto();
 
                 // Assert
-                dtos.Should().BeNull();
+                act.Should().Throw<ArgumentNullException>().WithParameterName("models");
             }
 
             [Fact]
@@ -153,7 +153,7 @@ namespace BookStore.API.Tests.Mappings
                 dto.Success.Should().BeTrue();
                 dto.Message.Should().Be("Success");
                 dto.Payload.Should().NotBeNull();
-                dto.Payload.Id.Should().Be(category.Id);
+                dto.Payload!.Id.Should().Be(category.Id);
                 dto.Payload.Name.Should().Be(category.Name);
             }
 
@@ -174,16 +174,16 @@ namespace BookStore.API.Tests.Mappings
             }
 
             [Fact]
-            public void OperationResultCategory_ToDto_WithNull_ShouldReturnNull()
+            public void OperationResultCategory_ToDto_WithNull_ShouldThrowArgumentNullException()
             {
                 // Arrange
-                OperationResult<Category> operationResult = null;
+                OperationResult<Category>? operationResult = null;
 
                 // Act
-                var dto = operationResult.ToDto();
+                var act = () => operationResult!.ToDto();
 
                 // Assert
-                dto.Should().BeNull();
+                act.Should().Throw<ArgumentNullException>().WithParameterName("operationResult");
             }
         }
     }

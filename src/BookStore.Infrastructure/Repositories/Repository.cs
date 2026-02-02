@@ -26,7 +26,7 @@ namespace BookStore.Infrastructure.Repositories
 
         public virtual async Task<IEnumerable<TEntity>> GetAll(CancellationToken ct = default)
         {
-            return await DbSet.ToListAsync(ct);
+            return await DbSet.AsNoTracking().ToListAsync(ct);
         }
 
         public virtual async Task<PagedResponse<TEntity>> GetAllWithPagination(int pageNumber, int pageSize, CancellationToken ct = default)
@@ -35,6 +35,7 @@ namespace BookStore.Infrastructure.Repositories
 
             var entities = await Db.Set<TEntity>()
                 .AsNoTracking()
+                .OrderBy(e => e.Id)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(ct);
@@ -69,6 +70,11 @@ namespace BookStore.Infrastructure.Repositories
         public async Task<IEnumerable<TEntity>> Search(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
         {
             return await DbSet.AsNoTracking().Where(predicate).ToListAsync(ct);
+        }
+
+        public async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking().AnyAsync(predicate, ct);
         }
 
         public async Task<int> SaveChanges(CancellationToken ct = default)

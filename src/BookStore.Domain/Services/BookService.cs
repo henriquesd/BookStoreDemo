@@ -1,3 +1,4 @@
+using BookStore.Domain.Constants;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 
@@ -37,10 +38,10 @@ namespace BookStore.Domain.Services
                     return validation;
                 }
 
-                var existingBooks = await _bookRepository.Search(b => b.Name == book.Name, ct);
-                if (existingBooks.Any())
+                var bookExists = await _bookRepository.ExistsAsync(b => b.Name == book.Name, ct);
+                if (bookExists)
                 {
-                    return OperationResult<Book>.Duplicate("A book with this name already exists");
+                    return OperationResult<Book>.Duplicate(ErrorMessages.BookDuplicate);
                 }
 
                 await _bookRepository.Add(book, ct);
@@ -48,7 +49,7 @@ namespace BookStore.Domain.Services
             }
             catch (Exception ex)
             {
-                return OperationResult<Book>.Error($"An error occurred while adding the book: {ex.Message}");
+                return OperationResult<Book>.Error(string.Format(ErrorMessages.BookAddError, ex.Message));
             }
         }
 
@@ -65,13 +66,13 @@ namespace BookStore.Domain.Services
                 var existingBook = await _bookRepository.GetByIdAsNoTracking(book.Id, ct);
                 if (existingBook == null)
                 {
-                    return OperationResult<Book>.NotFound($"Book with ID {book.Id} not found");
+                    return OperationResult<Book>.NotFound(string.Format(ErrorMessages.BookNotFound, book.Id));
                 }
 
-                var duplicateBooks = await _bookRepository.Search(b => b.Name == book.Name && b.Id != book.Id, ct);
-                if (duplicateBooks.Any())
+                var duplicateExists = await _bookRepository.ExistsAsync(b => b.Name == book.Name && b.Id != book.Id, ct);
+                if (duplicateExists)
                 {
-                    return OperationResult<Book>.Duplicate("Another book with this name already exists");
+                    return OperationResult<Book>.Duplicate(ErrorMessages.BookDuplicateOnUpdate);
                 }
 
                 await _bookRepository.Update(book, ct);
@@ -79,7 +80,7 @@ namespace BookStore.Domain.Services
             }
             catch (Exception ex)
             {
-                return OperationResult<Book>.Error($"An error occurred while updating the book: {ex.Message}");
+                return OperationResult<Book>.Error(string.Format(ErrorMessages.BookUpdateError, ex.Message));
             }
         }
 
@@ -96,7 +97,7 @@ namespace BookStore.Domain.Services
                 var existingBook = await _bookRepository.GetById(id, ct);
                 if (existingBook == null)
                 {
-                    return OperationResult<bool>.NotFound($"Book with ID {id} not found");
+                    return OperationResult<bool>.NotFound(string.Format(ErrorMessages.BookNotFound, id));
                 }
 
                 await _bookRepository.Remove(existingBook, ct);
@@ -104,7 +105,7 @@ namespace BookStore.Domain.Services
             }
             catch (Exception ex)
             {
-                return OperationResult<bool>.Error($"An error occurred while removing the book: {ex.Message}");
+                return OperationResult<bool>.Error(string.Format(ErrorMessages.BookRemoveError, ex.Message));
             }
         }
 
@@ -122,8 +123,6 @@ namespace BookStore.Domain.Services
         {
             return await _bookRepository.SearchBookWithCategory(searchedValue, ct);
         }
-
-        #region Private Validation Methods
 
         private static OperationResult<Book> ValidateBook(Book? book)
         {
@@ -143,7 +142,5 @@ namespace BookStore.Domain.Services
 
         private static OperationResult<bool> ValidateId(int id) =>
             ValidationHelper.ValidateIdForRemoval(id, "book");
-
-        #endregion
     }
 }

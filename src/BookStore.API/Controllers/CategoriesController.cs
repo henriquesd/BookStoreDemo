@@ -5,8 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers
 {
+    [ApiController]
     [Route("api/[controller]")]
-    public class CategoriesController : MainController
+    public class CategoriesController : ControllerBase
     {
         private readonly ICategoryService _categoryService;
 

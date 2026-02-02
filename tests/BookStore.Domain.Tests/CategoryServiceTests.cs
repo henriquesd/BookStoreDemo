@@ -137,9 +137,9 @@ namespace BookStore.Domain.Tests
         public async Task Add_ShouldAddCategory_WhenCategoryNameDoesNotExist()
         {
             var category = _fixture.Create<Category>();
-            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
-                .ReturnsAsync(new List<Category>());
-            _categoryRepositoryMock.Setup(r => r.Add(category));
+            _categoryRepositoryMock.Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+            _categoryRepositoryMock.Setup(r => r.Add(category, It.IsAny<CancellationToken>()));
 
             var result = await _service.Add(category);
 
@@ -152,9 +152,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_ShouldNotAddCategory_WhenCategoryNameAlreadyExists()
         {
             var category = _fixture.Create<Category>();
-            var existingCategories = _fixture.CreateMany<Category>().ToList();
-            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
-                .ReturnsAsync(existingCategories);
+            _categoryRepositoryMock.Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             var result = await _service.Add(category);
 
@@ -167,23 +166,23 @@ namespace BookStore.Domain.Tests
         public async Task Add_ShouldCallRepositoryOnce_WhenCategoryIsValid()
         {
             var category = _fixture.Create<Category>();
-            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
-                .ReturnsAsync(new List<Category>());
-            _categoryRepositoryMock.Setup(r => r.Add(category));
+            _categoryRepositoryMock.Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+            _categoryRepositoryMock.Setup(r => r.Add(category, It.IsAny<CancellationToken>()));
 
             await _service.Add(category);
 
-            _categoryRepositoryMock.Verify(r => r.Add(category), Times.Once);
+            _categoryRepositoryMock.Verify(r => r.Add(category, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
         public async Task Update_ShouldUpdateCategory_WhenCategoryNameDoesNotExist()
         {
             var category = _fixture.Create<Category>();
-            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
-                .ReturnsAsync(new List<Category>());
-            _categoryRepositoryMock.Setup(r => r.GetByIdAsNoTracking(category.Id)).ReturnsAsync(category);
-            _categoryRepositoryMock.Setup(r => r.Update(category));
+            _categoryRepositoryMock.Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+            _categoryRepositoryMock.Setup(r => r.GetByIdAsNoTracking(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
+            _categoryRepositoryMock.Setup(r => r.Update(category, It.IsAny<CancellationToken>()));
 
             var result = await _service.Update(category);
 
@@ -197,10 +196,9 @@ namespace BookStore.Domain.Tests
         public async Task Update_ShouldNotUpdateCategory_WhenCategoryNameAlreadyExists()
         {
             var category = _fixture.Create<Category>();
-            var existingCategories = _fixture.CreateMany<Category>().ToList();
-            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
-                .ReturnsAsync(existingCategories);
-            _categoryRepositoryMock.Setup(r => r.GetByIdAsNoTracking(category.Id)).ReturnsAsync(category);
+            _categoryRepositoryMock.Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+            _categoryRepositoryMock.Setup(r => r.GetByIdAsNoTracking(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
 
             var result = await _service.Update(category);
 
@@ -213,13 +211,13 @@ namespace BookStore.Domain.Tests
         public async Task Update_ShouldCallRepositoryOnce_WhenCategoryIsValid()
         {
             var category = _fixture.Create<Category>();
-            _categoryRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>()))
-                .ReturnsAsync(new List<Category>());
-            _categoryRepositoryMock.Setup(r => r.GetByIdAsNoTracking(category.Id)).ReturnsAsync(category);
+            _categoryRepositoryMock.Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+            _categoryRepositoryMock.Setup(r => r.GetByIdAsNoTracking(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
 
             await _service.Update(category);
 
-            _categoryRepositoryMock.Verify(r => r.Update(category), Times.Once);
+            _categoryRepositoryMock.Verify(r => r.Update(category, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

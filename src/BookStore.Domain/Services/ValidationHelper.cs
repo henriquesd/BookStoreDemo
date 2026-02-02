@@ -1,4 +1,4 @@
-using BookStore.Domain.Interfaces;
+using BookStore.Domain.Constants;
 using BookStore.Domain.Models;
 
 namespace BookStore.Domain.Services
@@ -9,7 +9,7 @@ namespace BookStore.Domain.Services
         {
             if (entity == null)
             {
-                return OperationResult<T>.ValidationError($"{entityName} cannot be null");
+                return OperationResult<T>.ValidationError(string.Format(ErrorMessages.EntityCannotBeNull, entityName));
             }
 
             return new OperationResult<T>(true, null);
@@ -19,7 +19,7 @@ namespace BookStore.Domain.Services
         {
             if (string.IsNullOrWhiteSpace(value))
             {
-                return OperationResult<T>.ValidationError($"{fieldName} is required");
+                return OperationResult<T>.ValidationError(string.Format(ErrorMessages.FieldRequired, fieldName));
             }
 
             return new OperationResult<T>(true, null);
@@ -29,7 +29,7 @@ namespace BookStore.Domain.Services
         {
             if (id <= 0)
             {
-                return OperationResult<T>.ValidationError($"Invalid {entityName} ID");
+                return OperationResult<T>.ValidationError(string.Format(ErrorMessages.InvalidId, entityName));
             }
 
             return new OperationResult<T>(true, null);
@@ -39,7 +39,7 @@ namespace BookStore.Domain.Services
         {
             if (id <= 0)
             {
-                return OperationResult<bool>.ValidationError($"Invalid {entityName} ID");
+                return OperationResult<bool>.ValidationError(string.Format(ErrorMessages.InvalidId, entityName));
             }
 
             return new OperationResult<bool>(true, null);

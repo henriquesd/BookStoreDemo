@@ -1,4 +1,5 @@
 using BookStore.API.Configuration;
+using BookStore.API.Middleware;
 using BookStore.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,6 +21,8 @@ builder.Services.AddCors();
 builder.Services.ResolveDependencies();
 
 var app = builder.Build();
+
+app.UseGlobalExceptionHandler();
 
 app.ConfigureSwagger();
 
