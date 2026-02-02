@@ -18,7 +18,7 @@ namespace BookStore.API.Dtos.Book
 
         public string Description { get; set; }
 
-        public double Value { get; set; }
+        public decimal Value { get; set; }
 
         public DateTime PublishDate { get; set; }
     }

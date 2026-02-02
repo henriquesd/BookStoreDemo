@@ -1,4 +1,4 @@
-﻿using BookStore.Domain.Interfaces;
+using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 
 namespace BookStore.Domain.Services
@@ -12,22 +12,22 @@ namespace BookStore.Domain.Services
             _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
         }
 
-        public async Task<IEnumerable<Book>> GetAll()
+        public async Task<IEnumerable<Book>> GetAll(CancellationToken ct = default)
         {
-            return await _bookRepository.GetAll();
+            return await _bookRepository.GetAll(ct);
         }
 
-        public async Task<PagedResponse<Book>> GetAllWithPagination(int pageNumber, int pageSize)
+        public async Task<PagedResponse<Book>> GetAllWithPagination(int pageNumber, int pageSize, CancellationToken ct = default)
         {
-            return await _bookRepository.GetAllWithPagination(pageNumber, pageSize);
+            return await _bookRepository.GetAllWithPagination(pageNumber, pageSize, ct);
         }
 
-        public async Task<Book> GetById(int id)
+        public async Task<Book?> GetById(int id, CancellationToken ct = default)
         {
-            return await _bookRepository.GetById(id);
+            return await _bookRepository.GetById(id, ct);
         }
 
-        public async Task<IOperationResult<Book>> Add(Book book)
+        public async Task<IOperationResult<Book>> Add(Book book, CancellationToken ct = default)
         {
             try
             {
@@ -37,22 +37,22 @@ namespace BookStore.Domain.Services
                     return validation;
                 }
 
-                var existingBooks = await _bookRepository.Search(b => b.Name == book.Name);
+                var existingBooks = await _bookRepository.Search(b => b.Name == book.Name, ct);
                 if (existingBooks.Any())
                 {
-                    return new OperationResult<Book>(false, "A book with this name already exists");
+                    return OperationResult<Book>.Duplicate("A book with this name already exists");
                 }
 
-                await _bookRepository.Add(book);
-                return new OperationResult<Book>(book);
+                await _bookRepository.Add(book, ct);
+                return OperationResult<Book>.Ok(book);
             }
             catch (Exception ex)
             {
-                return new OperationResult<Book>(false, $"An error occurred while adding the book: {ex.Message}");
+                return OperationResult<Book>.Error($"An error occurred while adding the book: {ex.Message}");
             }
         }
 
-        public async Task<IOperationResult<Book>> Update(Book book)
+        public async Task<IOperationResult<Book>> Update(Book book, CancellationToken ct = default)
         {
             try
             {
@@ -62,28 +62,28 @@ namespace BookStore.Domain.Services
                     return validation;
                 }
 
-                var existingBook = await _bookRepository.GetByIdAsNoTracking(book.Id);
+                var existingBook = await _bookRepository.GetByIdAsNoTracking(book.Id, ct);
                 if (existingBook == null)
                 {
-                    return new OperationResult<Book>(false, $"Book with ID {book.Id} not found");
+                    return OperationResult<Book>.NotFound($"Book with ID {book.Id} not found");
                 }
 
-                var duplicateBooks = await _bookRepository.Search(b => b.Name == book.Name && b.Id != book.Id);
+                var duplicateBooks = await _bookRepository.Search(b => b.Name == book.Name && b.Id != book.Id, ct);
                 if (duplicateBooks.Any())
                 {
-                    return new OperationResult<Book>(false, "Another book with this name already exists");
+                    return OperationResult<Book>.Duplicate("Another book with this name already exists");
                 }
 
-                await _bookRepository.Update(book);
-                return new OperationResult<Book>(book);
+                await _bookRepository.Update(book, ct);
+                return OperationResult<Book>.Ok(book);
             }
             catch (Exception ex)
             {
-                return new OperationResult<Book>(false, $"An error occurred while updating the book: {ex.Message}");
+                return OperationResult<Book>.Error($"An error occurred while updating the book: {ex.Message}");
             }
         }
 
-        public async Task<IOperationResult<bool>> Remove(int id)
+        public async Task<IOperationResult<bool>> Remove(int id, CancellationToken ct = default)
         {
             try
             {
@@ -93,79 +93,56 @@ namespace BookStore.Domain.Services
                     return validation;
                 }
 
-                var existingBook = await _bookRepository.GetById(id);
+                var existingBook = await _bookRepository.GetById(id, ct);
                 if (existingBook == null)
                 {
-                    return new OperationResult<bool>(false, $"Book with ID {id} not found");
+                    return OperationResult<bool>.NotFound($"Book with ID {id} not found");
                 }
 
-                await _bookRepository.Remove(existingBook);
-                return new OperationResult<bool>(true);
+                await _bookRepository.Remove(existingBook, ct);
+                return OperationResult<bool>.Ok(true);
             }
             catch (Exception ex)
             {
-                return new OperationResult<bool>(false, $"An error occurred while removing the book: {ex.Message}");
+                return OperationResult<bool>.Error($"An error occurred while removing the book: {ex.Message}");
             }
         }
 
-        public async Task<IEnumerable<Book>> GetBooksByCategory(int categoryId)
+        public async Task<IEnumerable<Book>> GetBooksByCategory(int categoryId, CancellationToken ct = default)
         {
-            return await _bookRepository.GetBooksByCategory(categoryId);
+            return await _bookRepository.GetBooksByCategory(categoryId, ct);
         }
 
-        public async Task<IEnumerable<Book>> Search(string bookName)
+        public async Task<IEnumerable<Book>> Search(string bookName, CancellationToken ct = default)
         {
-            return await _bookRepository.Search(c => c.Name.Contains(bookName));
+            return await _bookRepository.Search(c => c.Name.Contains(bookName), ct);
         }
 
-        public async Task<IEnumerable<Book>> SearchBookWithCategory(string searchedValue)
+        public async Task<IEnumerable<Book>> SearchBookWithCategory(string searchedValue, CancellationToken ct = default)
         {
-            return await _bookRepository.SearchBookWithCategory(searchedValue);
+            return await _bookRepository.SearchBookWithCategory(searchedValue, ct);
         }
 
         #region Private Validation Methods
 
-        private OperationResult<Book> ValidateBook(Book book)
+        private static OperationResult<Book> ValidateBook(Book? book)
         {
-            if (book == null)
-            {
-                return new OperationResult<Book>(false, "Book cannot be null");
-            }
+            var nullCheck = ValidationHelper.ValidateNotNull<Book>(book, "Book");
+            if (!nullCheck.Success) return nullCheck;
 
-            if (string.IsNullOrWhiteSpace(book.Name))
-            {
-                return new OperationResult<Book>(false, "Book name is required");
-            }
-
-            return new OperationResult<Book>(true, null);
+            return ValidationHelper.ValidateRequiredString<Book>(book!.Name, "Book name");
         }
 
-        private OperationResult<Book> ValidateBookForUpdate(Book book)
+        private static OperationResult<Book> ValidateBookForUpdate(Book? book)
         {
             var basicValidation = ValidateBook(book);
-            if (!basicValidation.Success)
-            {
-                return basicValidation;
-            }
+            if (!basicValidation.Success) return basicValidation;
 
-            var idValidation = ValidateId(book.Id);
-            if (!idValidation.Success)
-            {
-                return new OperationResult<Book>(false, idValidation.Message);
-            }
-
-            return new OperationResult<Book>(true, null);
+            return ValidationHelper.ValidateId<Book>(book!.Id, "book");
         }
 
-        private OperationResult<bool> ValidateId(int id)
-        {
-            if (id <= 0)
-            {
-                return new OperationResult<bool>(false, "Invalid book ID");
-            }
-
-            return new OperationResult<bool>(true, null);
-        }
+        private static OperationResult<bool> ValidateId(int id) =>
+            ValidationHelper.ValidateIdForRemoval(id, "book");
 
         #endregion
     }

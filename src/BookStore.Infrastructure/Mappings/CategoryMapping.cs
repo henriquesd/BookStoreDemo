@@ -14,10 +14,11 @@ namespace BookStore.Infrastructure.Mappings
                 .IsRequired()
                 .HasColumnType("varchar(150)");
 
-            // 1 : N => Category : Books
             builder.HasMany(c => c.Books)
                 .WithOne(b => b.Category)
                 .HasForeignKey(b => b.CategoryId);
+
+            builder.HasIndex(c => c.Name);
 
             builder.ToTable("Categories");
         }

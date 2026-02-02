@@ -260,8 +260,8 @@ namespace BookStore.API.Tests
         public async Task Update_ShouldReturnNotFound_WhenServiceReturnsNotFound()
         {
             var dto = _fixture.Create<CategoryEditDto>();
-            var operationResult = new OperationResult<Category>(false, "Category not found");
-            _categoryServiceMock.Setup(s => s.Update(It.IsAny<Category>())).ReturnsAsync(operationResult);
+            var operationResult = OperationResult<Category>.NotFound("Category not found");
+            _categoryServiceMock.Setup(s => s.Update(It.IsAny<Category>(), It.IsAny<CancellationToken>())).ReturnsAsync(operationResult);
 
             var result = await _controller.Update(dto.Id, dto);
 
@@ -295,8 +295,8 @@ namespace BookStore.API.Tests
         [Fact]
         public async Task Remove_ShouldReturnNotFound_WhenCategoryDoesNotExist()
         {
-            var operationResult = new OperationResult<bool>(false, "Category with ID 1 not found");
-            _categoryServiceMock.Setup(s => s.Remove(1)).ReturnsAsync(operationResult);
+            var operationResult = OperationResult<bool>.NotFound("Category with ID 1 not found");
+            _categoryServiceMock.Setup(s => s.Remove(1, It.IsAny<CancellationToken>())).ReturnsAsync(operationResult);
 
             var result = await _controller.Remove(1);
 

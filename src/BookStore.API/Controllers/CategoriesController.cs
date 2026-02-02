@@ -1,4 +1,4 @@
-﻿using BookStore.API.Dtos.Category;
+using BookStore.API.Dtos.Category;
 using BookStore.API.Mappings;
 using BookStore.Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +17,9 @@ namespace BookStore.API.Controllers
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(CancellationToken ct = default)
         {
-            var categories = await _categoryService.GetAll();
+            var categories = await _categoryService.GetAll(ct);
 
             var categoryResultDtoList = categories.ToDto();
 
@@ -29,14 +29,14 @@ namespace BookStore.API.Controllers
         [HttpGet("GetAllWithPagination")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
+        public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
         {
             if (pageNumber <= 0 || pageSize <= 0)
             {
                 return BadRequest(new { message = "Page number and page size must be greater than zero" });
             }
 
-            var paginatedCategories = await _categoryService.GetAllWithPagination(pageNumber, pageSize);
+            var paginatedCategories = await _categoryService.GetAllWithPagination(pageNumber, pageSize, ct);
 
             var categoriesResultDto = paginatedCategories.ToDto(c => c.ToDto());
 
@@ -46,9 +46,9 @@ namespace BookStore.API.Controllers
         [HttpGet("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(int id, CancellationToken ct = default)
         {
-            var category = await _categoryService.GetById(id);
+            var category = await _categoryService.GetById(id, ct);
 
             if (category == null)
             {
@@ -63,17 +63,17 @@ namespace BookStore.API.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(CategoryResultDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Add(CategoryAddDto categoryDto)
+        public async Task<IActionResult> Add(CategoryAddDto categoryDto, CancellationToken ct = default)
         {
             var category = categoryDto.ToModel();
-            var categoryResult = await _categoryService.Add(category);
+            var categoryResult = await _categoryService.Add(category, ct);
 
             if (!categoryResult.Success)
             {
                 return BadRequest(new { message = categoryResult.Message });
             }
 
-            var categoryResultDto = categoryResult.Payload.ToDto();
+            var categoryResultDto = categoryResult.Payload!.ToDto();
 
             return CreatedAtAction(nameof(GetById), new { id = categoryResultDto.Id }, categoryResultDto);
         }
@@ -82,7 +82,7 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(typeof(CategoryResultDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Update(int id, CategoryEditDto categoryDto)
+        public async Task<IActionResult> Update(int id, CategoryEditDto categoryDto, CancellationToken ct = default)
         {
             if (id != categoryDto.Id)
             {
@@ -90,16 +90,16 @@ namespace BookStore.API.Controllers
             }
 
             var category = categoryDto.ToModel();
-            var categoryResult = await _categoryService.Update(category);
+            var categoryResult = await _categoryService.Update(category, ct);
 
             if (!categoryResult.Success)
             {
-                return categoryResult.Message.Contains("not found")
+                return categoryResult.ErrorCode == OperationErrorCode.NotFound
                     ? NotFound(new { message = categoryResult.Message })
                     : BadRequest(new { message = categoryResult.Message });
             }
 
-            var categoryResultDto = categoryResult.Payload.ToDto();
+            var categoryResultDto = categoryResult.Payload!.ToDto();
 
             return Ok(categoryResultDto);
         }
@@ -108,13 +108,13 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Remove(int id)
+        public async Task<IActionResult> Remove(int id, CancellationToken ct = default)
         {
-            var result = await _categoryService.Remove(id);
+            var result = await _categoryService.Remove(id, ct);
 
             if (!result.Success)
             {
-                return result.Message.Contains("not found")
+                return result.ErrorCode == OperationErrorCode.NotFound
                     ? NotFound(new { message = result.Message })
                     : BadRequest(new { message = result.Message });
             }
@@ -127,14 +127,14 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Search(string category)
+        public async Task<IActionResult> Search(string category, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(category))
             {
                 return BadRequest(new { message = "Search term is required" });
             }
 
-            var categories = await _categoryService.Search(category);
+            var categories = await _categoryService.Search(category, ct);
 
             if (!categories.Any())
             {

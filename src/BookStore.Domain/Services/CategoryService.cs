@@ -1,4 +1,4 @@
-﻿using BookStore.Domain.Interfaces;
+using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 
 namespace BookStore.Domain.Services
@@ -14,22 +14,22 @@ namespace BookStore.Domain.Services
             _bookService = bookService ?? throw new ArgumentNullException(nameof(bookService));
         }
 
-        public async Task<IEnumerable<Category>> GetAll()
+        public async Task<IEnumerable<Category>> GetAll(CancellationToken ct = default)
         {
-            return await _categoryRepository.GetAll();
+            return await _categoryRepository.GetAll(ct);
         }
 
-        public async Task<PagedResponse<Category>> GetAllWithPagination(int pageNumber, int pageSize)
+        public async Task<PagedResponse<Category>> GetAllWithPagination(int pageNumber, int pageSize, CancellationToken ct = default)
         {
-            return await _categoryRepository.GetAllWithPagination(pageNumber, pageSize);
+            return await _categoryRepository.GetAllWithPagination(pageNumber, pageSize, ct);
         }
 
-        public async Task<Category> GetById(int id)
+        public async Task<Category?> GetById(int id, CancellationToken ct = default)
         {
-            return await _categoryRepository.GetById(id);
+            return await _categoryRepository.GetById(id, ct);
         }
 
-        public async Task<IOperationResult<Category>> Add(Category category)
+        public async Task<IOperationResult<Category>> Add(Category category, CancellationToken ct = default)
         {
             try
             {
@@ -39,23 +39,23 @@ namespace BookStore.Domain.Services
                     return validation;
                 }
 
-                var existingCategories = await _categoryRepository.Search(c => c.Name == category.Name);
+                var existingCategories = await _categoryRepository.Search(c => c.Name == category.Name, ct);
                 if (existingCategories.Any())
                 {
-                    return new OperationResult<Category>(false, "This category name is already being used");
+                    return OperationResult<Category>.Duplicate("This category name is already being used");
                 }
 
-                await _categoryRepository.Add(category);
+                await _categoryRepository.Add(category, ct);
 
-                return new OperationResult<Category>(category);
+                return OperationResult<Category>.Ok(category);
             }
             catch (Exception ex)
             {
-                return new OperationResult<Category>(false, $"An error occurred while adding the category: {ex.Message}");
+                return OperationResult<Category>.Error($"An error occurred while adding the category: {ex.Message}");
             }
         }
 
-        public async Task<IOperationResult<Category>> Update(Category category)
+        public async Task<IOperationResult<Category>> Update(Category category, CancellationToken ct = default)
         {
             try
             {
@@ -65,29 +65,29 @@ namespace BookStore.Domain.Services
                     return validation;
                 }
 
-                var existingCategory = await _categoryRepository.GetByIdAsNoTracking(category.Id);
+                var existingCategory = await _categoryRepository.GetByIdAsNoTracking(category.Id, ct);
                 if (existingCategory == null)
                 {
-                    return new OperationResult<Category>(false, $"Category with ID {category.Id} not found");
+                    return OperationResult<Category>.NotFound($"Category with ID {category.Id} not found");
                 }
 
-                var duplicateCategories = await _categoryRepository.Search(c => c.Name == category.Name && c.Id != category.Id);
+                var duplicateCategories = await _categoryRepository.Search(c => c.Name == category.Name && c.Id != category.Id, ct);
                 if (duplicateCategories.Any())
                 {
-                    return new OperationResult<Category>(false, "This category name is already being used");
+                    return OperationResult<Category>.Duplicate("This category name is already being used");
                 }
 
-                await _categoryRepository.Update(category);
+                await _categoryRepository.Update(category, ct);
 
-                return new OperationResult<Category>(category);
+                return OperationResult<Category>.Ok(category);
             }
             catch (Exception ex)
             {
-                return new OperationResult<Category>(false, $"An error occurred while updating the category: {ex.Message}");
+                return OperationResult<Category>.Error($"An error occurred while updating the category: {ex.Message}");
             }
         }
 
-        public async Task<IOperationResult<bool>> Remove(int id)
+        public async Task<IOperationResult<bool>> Remove(int id, CancellationToken ct = default)
         {
             try
             {
@@ -97,76 +97,52 @@ namespace BookStore.Domain.Services
                     return validation;
                 }
 
-                var existingCategory = await _categoryRepository.GetById(id);
+                var existingCategory = await _categoryRepository.GetById(id, ct);
                 if (existingCategory == null)
                 {
-                    return new OperationResult<bool>(false, $"Category with ID {id} not found");
+                    return OperationResult<bool>.NotFound($"Category with ID {id} not found");
                 }
 
-                var books = await _bookService.GetBooksByCategory(id);
+                var books = await _bookService.GetBooksByCategory(id, ct);
                 if (books.Any())
                 {
-                    return new OperationResult<bool>(false, "Cannot delete category with associated books");
+                    return OperationResult<bool>.HasDependencies("Cannot delete category with associated books");
                 }
 
-                await _categoryRepository.Remove(existingCategory);
-                return new OperationResult<bool>(true);
+                await _categoryRepository.Remove(existingCategory, ct);
+                return OperationResult<bool>.Ok(true);
             }
             catch (Exception ex)
             {
-                return new OperationResult<bool>(false, $"An error occurred while removing the category: {ex.Message}");
+                return OperationResult<bool>.Error($"An error occurred while removing the category: {ex.Message}");
             }
         }
 
-        public async Task<IEnumerable<Category>> Search(string categoryName)
+        public async Task<IEnumerable<Category>> Search(string categoryName, CancellationToken ct = default)
         {
-            return await _categoryRepository.Search(c => c.Name.Contains(categoryName));
+            return await _categoryRepository.Search(c => c.Name.Contains(categoryName), ct);
         }
 
         #region Private Validation Methods
 
-        private OperationResult<Category> ValidateCategory(Category category)
+        private static OperationResult<Category> ValidateCategory(Category? category)
         {
-            if (category == null)
-            {
-                return new OperationResult<Category>(false, "Category cannot be null");
-            }
+            var nullCheck = ValidationHelper.ValidateNotNull<Category>(category, "Category");
+            if (!nullCheck.Success) return nullCheck;
 
-            if (string.IsNullOrWhiteSpace(category.Name))
-            {
-                return new OperationResult<Category>(false, "Category name is required");
-            }
-
-            return new OperationResult<Category>(true, null);
+            return ValidationHelper.ValidateRequiredString<Category>(category!.Name, "Category name");
         }
 
-        private OperationResult<Category> ValidateCategoryForUpdate(Category category)
+        private static OperationResult<Category> ValidateCategoryForUpdate(Category? category)
         {
             var basicValidation = ValidateCategory(category);
-            if (!basicValidation.Success)
-            {
-                return basicValidation;
-            }
+            if (!basicValidation.Success) return basicValidation;
 
-            var idValidation = ValidateId(category.Id);
-            if (!idValidation.Success)
-            {
-                return new OperationResult<Category>(false, idValidation.Message);
-            }
-
-
-            return new OperationResult<Category>(true, null);
+            return ValidationHelper.ValidateId<Category>(category!.Id, "category");
         }
 
-        private OperationResult<bool> ValidateId(int id)
-        {
-            if (id <= 0)
-            {
-                return new OperationResult<bool>(false, "Invalid category ID");
-            }
-
-            return new OperationResult<bool>(true, null);
-        }
+        private static OperationResult<bool> ValidateId(int id) =>
+            ValidationHelper.ValidateIdForRemoval(id, "category");
 
         #endregion
     }

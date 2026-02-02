@@ -34,7 +34,7 @@ namespace BookStore.API.Tests
                 Name = name,
                 Author = "Test Author",
                 Description = "Test Description",
-                Value = 29.99,
+                Value = 29.99m,
                 CategoryId = categoryId,
                 PublishDate = DateTime.Now,
                 Category = new Category { Id = categoryId, Name = "Test Category" }
@@ -260,7 +260,7 @@ namespace BookStore.API.Tests
         public async Task Update_ShouldReturnNotFound_WhenServiceReturnsNotFound()
         {
             var dto = _fixture.Create<BookEditDto>();
-            var operationResult = new OperationResult<Book>(false, "Book not found");
+            var operationResult = OperationResult<Book>.NotFound("Book not found");
             _bookServiceMock.Setup(s => s.Update(It.IsAny<Book>())).ReturnsAsync(operationResult);
 
             var result = await _controller.Update(dto.Id, dto);
@@ -298,10 +298,10 @@ namespace BookStore.API.Tests
         [Fact]
         public async Task Remove_ShouldReturnNotFound_WhenBookDoesNotExist()
         {
-            var operationResult = new OperationResult<bool>(false, "Book with ID 1 not found");
+            var operationResult = OperationResult<bool>.NotFound("Book with ID 1 not found");
 
             _bookServiceMock
-                .Setup(s => s.Remove(1))
+                .Setup(s => s.Remove(1, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(operationResult);
 
             var result = await _controller.Remove(1);

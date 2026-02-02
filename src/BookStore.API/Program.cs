@@ -35,11 +35,9 @@ app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
 if (app.Environment.IsDevelopment())
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var databaseSeeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-        databaseSeeder.SeedData();
-    }
+    using var scope = app.Services.CreateScope();
+    var databaseSeeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+    await databaseSeeder.SeedDataAsync();
 }
 
 app.Run();

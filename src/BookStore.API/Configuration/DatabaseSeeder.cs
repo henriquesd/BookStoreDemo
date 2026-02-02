@@ -1,5 +1,6 @@
-﻿using BookStore.Domain.Models;
+using BookStore.Domain.Models;
 using BookStore.Infrastructure.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookStore.API.Configuration
 {
@@ -12,26 +13,30 @@ namespace BookStore.API.Configuration
             _dbContext = dbContext;
         }
 
-        public void SeedData()
+        public async Task SeedDataAsync(CancellationToken ct = default)
         {
-            if (!_dbContext.Categories.Any())
+            if (!await _dbContext.Categories.AnyAsync(ct))
             {
                 var categories = Enumerable.Range(1, 110).Select(i => new Category { Name = $"Category {i}" });
                 _dbContext.Categories.AddRange(categories);
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync(ct);
             }
 
-            if (!_dbContext.Books.Any() && _dbContext.Categories.Any())
+            if (!await _dbContext.Books.AnyAsync(ct) && await _dbContext.Categories.AnyAsync(ct))
             {
-                var books = Enumerable.Range(1, 110).Select(i => new Book {
+                var firstCategory = await _dbContext.Categories.FirstAsync(ct);
+                var books = Enumerable.Range(1, 110).Select(i => new Book
+                {
                     Name = $"Book {i}",
-                    CategoryId = _dbContext.Categories.FirstOrDefault()!.Id,
+                    CategoryId = firstCategory.Id,
                     Author = $"Author {i}",
-                    Description = $"Test {i}" 
+                    Description = $"Test {i}",
+                    Value = 9.99m + i,
+                    PublishDate = DateTime.UtcNow.AddDays(-i)
                 });
 
                 _dbContext.Books.AddRange(books);
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync(ct);
             }
         }
     }

@@ -1,5 +1,15 @@
-﻿namespace BookStore.Domain.Interfaces
+namespace BookStore.Domain.Interfaces
 {
+    public enum OperationErrorCode
+    {
+        None,
+        NotFound,
+        Duplicate,
+        ValidationError,
+        HasDependencies,
+        UnexpectedError
+    }
+
     public interface IOperationResult<out T> : IOperationResult
     {
         T? Payload { get; }
@@ -9,5 +19,6 @@
     {
         bool Success { get; }
         string? Message { get; }
+        OperationErrorCode ErrorCode { get; }
     }
 }

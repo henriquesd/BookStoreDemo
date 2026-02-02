@@ -45,32 +45,13 @@ Content-Type: {{contentType}}
   "name": ""
 }
 
-### Step 1: Create category to update
-# @name catToUpdate
-POST {{baseUrl}}/api/categories
-Content-Type: {{contentType}}
-
-{
-  "name": "ToUpdate_{{$timestamp}}"
-}
-
-### Step 2: Update category (run Step 1 first)
-@updateCatId = {{catToUpdate.response.body.$.id}}
+### Update Category (set ID manually after creating one)
+@updateCatId = 1
 PUT {{baseUrl}}/api/categories/{{updateCatId}}
 Content-Type: {{contentType}}
 
 {
   "id": {{updateCatId}},
-  "name": "Updated_{{$timestamp}}"
-}
-
-### Update Category by ID (standalone - prompts for ID)
-@catIdToUpdate = {{$prompt Category ID to update}}
-PUT {{baseUrl}}/api/categories/{{catIdToUpdate}}
-Content-Type: {{contentType}}
-
-{
-  "id": {{catIdToUpdate}},
   "name": "Updated_{{$timestamp}}"
 }
 
@@ -92,22 +73,9 @@ Content-Type: {{contentType}}
   "name": "Non-existent Category"
 }
 
-### Step 1: Create category to delete
-# @name catToDelete
-POST {{baseUrl}}/api/categories
-Content-Type: {{contentType}}
-
-{
-  "name": "ToDelete_{{$timestamp}}"
-}
-
-### Step 2: Delete category (run Step 1 first)
-@deleteCatId = {{catToDelete.response.body.$.id}}
+### Delete Category (set ID manually)
+@deleteCatId = 1
 DELETE {{baseUrl}}/api/categories/{{deleteCatId}}
-
-### Delete Category by ID (standalone - prompts for ID)
-@catIdToDelete = {{$prompt Category ID to delete}}
-DELETE {{baseUrl}}/api/categories/{{catIdToDelete}}
 
 ### Delete Category - Not Found (ERROR TEST - Should return 404)
 DELETE {{baseUrl}}/api/categories/999
@@ -180,42 +148,13 @@ Content-Type: {{contentType}}
   "categoryId": 1
 }
 
-### Step 1: Create book to update
-# @name bookToUpdate
-POST {{baseUrl}}/api/books
-Content-Type: {{contentType}}
-
-{
-  "name": "ToUpdate_{{$timestamp}}",
-  "author": "Test Author",
-  "description": "Original description",
-  "value": 19.99,
-  "publishDate": "2024-01-15",
-  "categoryId": 1
-}
-
-### Step 2: Update book (run Step 1 first)
-@updateBookId = {{bookToUpdate.response.body.$.id}}
+### Update Book (set ID manually after creating one)
+@updateBookId = 1
 PUT {{baseUrl}}/api/books/{{updateBookId}}
 Content-Type: {{contentType}}
 
 {
   "id": {{updateBookId}},
-  "name": "Updated_{{$timestamp}}",
-  "author": "Test Author",
-  "description": "Updated description",
-  "value": 29.99,
-  "publishDate": "2024-01-15",
-  "categoryId": 1
-}
-
-### Update Book by ID (standalone - prompts for ID)
-@bookIdToUpdate = {{$prompt Book ID to update}}
-PUT {{baseUrl}}/api/books/{{bookIdToUpdate}}
-Content-Type: {{contentType}}
-
-{
-  "id": {{bookIdToUpdate}},
   "name": "Updated_{{$timestamp}}",
   "author": "Test Author",
   "description": "Updated description",
@@ -266,27 +205,9 @@ Content-Type: {{contentType}}
   "categoryId": 1
 }
 
-### Step 1: Create book to delete
-# @name bookToDelete
-POST {{baseUrl}}/api/books
-Content-Type: {{contentType}}
-
-{
-  "name": "ToDelete_{{$timestamp}}",
-  "author": "Test Author",
-  "description": "This book will be deleted",
-  "value": 15.99,
-  "publishDate": "2024-01-15",
-  "categoryId": 1
-}
-
-### Step 2: Delete book (run Step 1 first)
-@deleteBookId = {{bookToDelete.response.body.$.id}}
+### Delete Book (set ID manually)
+@deleteBookId = 1
 DELETE {{baseUrl}}/api/books/{{deleteBookId}}
-
-### Delete Book by ID (standalone - prompts for ID)
-@bookIdToDelete = {{$prompt Book ID to delete}}
-DELETE {{baseUrl}}/api/books/{{bookIdToDelete}}
 
 ### Delete Book - Not Found (ERROR TEST - Should return 404)
 DELETE {{baseUrl}}/api/books/999
