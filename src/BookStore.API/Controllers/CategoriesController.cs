@@ -93,16 +93,7 @@ namespace BookStore.API.Controllers
             var category = categoryDto.ToModel();
             var categoryResult = await _categoryService.Update(category, ct);
 
-            if (!categoryResult.Success)
-            {
-                return categoryResult.ErrorCode == OperationErrorCode.NotFound
-                    ? NotFound(new { message = categoryResult.Message })
-                    : BadRequest(new { message = categoryResult.Message });
-            }
-
-            var categoryResultDto = categoryResult.Payload!.ToDto();
-
-            return Ok(categoryResultDto);
+            return categoryResult.ToActionResult(c => c.ToDto());
         }
 
         [HttpDelete("{id:int}")]
@@ -113,14 +104,7 @@ namespace BookStore.API.Controllers
         {
             var result = await _categoryService.Remove(id, ct);
 
-            if (!result.Success)
-            {
-                return result.ErrorCode == OperationErrorCode.NotFound
-                    ? NotFound(new { message = result.Message })
-                    : BadRequest(new { message = result.Message });
-            }
-
-            return NoContent();
+            return result.ToActionResult();
         }
 
         [HttpGet]

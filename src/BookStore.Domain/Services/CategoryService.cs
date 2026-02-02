@@ -7,12 +7,12 @@ namespace BookStore.Domain.Services
     public class CategoryService : ICategoryService
     {
         private readonly ICategoryRepository _categoryRepository;
-        private readonly IBookService _bookService;
+        private readonly IBookRepository _bookRepository;
 
-        public CategoryService(ICategoryRepository categoryRepository, IBookService bookService)
+        public CategoryService(ICategoryRepository categoryRepository, IBookRepository bookRepository)
         {
             _categoryRepository = categoryRepository ?? throw new ArgumentNullException(nameof(categoryRepository));
-            _bookService = bookService ?? throw new ArgumentNullException(nameof(bookService));
+            _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
         }
 
         public async Task<IEnumerable<Category>> GetAll(CancellationToken ct = default)
@@ -104,8 +104,8 @@ namespace BookStore.Domain.Services
                     return OperationResult<bool>.NotFound(string.Format(ErrorMessages.CategoryNotFound, id));
                 }
 
-                var books = await _bookService.GetBooksByCategory(id, ct);
-                if (books.Any())
+                var hasBooks = await _bookRepository.ExistsAsync(b => b.CategoryId == id, ct);
+                if (hasBooks)
                 {
                     return OperationResult<bool>.HasDependencies(ErrorMessages.CategoryHasDependencies);
                 }

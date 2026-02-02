@@ -13,15 +13,15 @@ namespace BookStore.Domain.Tests
     {
         private readonly Fixture _fixture;
         private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
-        private readonly Mock<IBookService> _bookServiceMock;
+        private readonly Mock<IBookRepository> _bookRepositoryMock;
         private readonly CategoryService _service;
 
         public CategoryServiceTests()
         {
             _fixture = FixtureFactory.Create();
             _categoryRepositoryMock = new Mock<ICategoryRepository>();
-            _bookServiceMock = new Mock<IBookService>();
-            _service = new CategoryService(_categoryRepositoryMock.Object, _bookServiceMock.Object);
+            _bookRepositoryMock = new Mock<IBookRepository>();
+            _service = new CategoryService(_categoryRepositoryMock.Object, _bookRepositoryMock.Object);
         }
 
         [Fact]
@@ -229,9 +229,9 @@ namespace BookStore.Domain.Tests
                 .Setup(r => r.GetById(category.Id))
                 .ReturnsAsync(category);
 
-            _bookServiceMock
-                .Setup(s => s.GetBooksByCategory(category.Id))
-                .ReturnsAsync(new List<Book>());
+            _bookRepositoryMock
+                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
 
             var result = await _service.Remove(category.Id);
 
@@ -243,19 +243,13 @@ namespace BookStore.Domain.Tests
         {
             var category = _fixture.Create<Category>();
 
-            var books = _fixture
-                .Build<Book>()
-                .With(b => b.CategoryId, category.Id)
-                .CreateMany()
-                .ToList();
-
             _categoryRepositoryMock
                 .Setup(r => r.GetById(category.Id))
                 .ReturnsAsync(category);
 
-            _bookServiceMock
-                .Setup(s => s.GetBooksByCategory(category.Id))
-                .ReturnsAsync(books);
+            _bookRepositoryMock
+                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
 
             var result = await _service.Remove(category.Id);
 
@@ -284,9 +278,9 @@ namespace BookStore.Domain.Tests
                 .Setup(r => r.GetById(category.Id))
                 .ReturnsAsync(category);
 
-            _bookServiceMock
-                .Setup(s => s.GetBooksByCategory(category.Id))
-                .ReturnsAsync(new List<Book>());
+            _bookRepositoryMock
+                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
 
             await _service.Remove(category.Id);
 

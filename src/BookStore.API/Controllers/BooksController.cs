@@ -111,16 +111,7 @@ namespace BookStore.API.Controllers
             var book = bookDto.ToModel();
             var bookResult = await _bookService.Update(book, ct);
 
-            if (!bookResult.Success)
-            {
-                return bookResult.ErrorCode == OperationErrorCode.NotFound
-                    ? NotFound(new { message = bookResult.Message })
-                    : BadRequest(new { message = bookResult.Message });
-            }
-
-            var bookResultDto = bookResult.Payload!.ToDto();
-
-            return Ok(bookResultDto);
+            return bookResult.ToActionResult(b => b.ToDto());
         }
 
         [HttpDelete("{id:int}")]
@@ -131,14 +122,7 @@ namespace BookStore.API.Controllers
         {
             var result = await _bookService.Remove(id, ct);
 
-            if (!result.Success)
-            {
-                return result.ErrorCode == OperationErrorCode.NotFound
-                    ? NotFound(new { message = result.Message })
-                    : BadRequest(new { message = result.Message });
-            }
-
-            return NoContent();
+            return result.ToActionResult();
         }
 
         [HttpGet]
