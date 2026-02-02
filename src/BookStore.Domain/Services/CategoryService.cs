@@ -148,10 +148,12 @@ namespace BookStore.Domain.Services
                 return basicValidation;
             }
 
-            if (category.Id <= 0)
+            var idValidation = ValidateId(category.Id);
+            if (!idValidation.Success)
             {
-                return new OperationResult<Category>(false, "Invalid category ID");
+                return new OperationResult<Category>(false, idValidation.Message);
             }
+
 
             return new OperationResult<Category>(true, null);
         }

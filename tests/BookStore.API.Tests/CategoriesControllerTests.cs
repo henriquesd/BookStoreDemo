@@ -202,17 +202,6 @@ namespace BookStore.API.Tests
         }
 
         [Fact]
-        public async Task Add_ShouldReturnBadRequest_WhenModelStateIsInvalid()
-        {
-            var dto = _fixture.Create<CategoryAddDto>();
-            _controller.ModelState.AddModelError("Name", "Name is required");
-
-            var result = await _controller.Add(dto);
-
-            result.Should().BeOfType<BadRequestObjectResult>();
-        }
-
-        [Fact]
         public async Task Add_ShouldReturnBadRequest_WhenServiceReturnsFails()
         {
             var dto = _fixture.Create<CategoryAddDto>();
@@ -263,17 +252,6 @@ namespace BookStore.API.Tests
             var dto = _fixture.Build<CategoryEditDto>().With(c => c.Id, dtoId).Create();
 
             var result = await _controller.Update(urlId, dto);
-
-            result.Should().BeOfType<BadRequestObjectResult>();
-        }
-
-        [Fact]
-        public async Task Update_ShouldReturnBadRequest_WhenModelStateIsInvalid()
-        {
-            var dto = _fixture.Create<CategoryEditDto>();
-            _controller.ModelState.AddModelError("Name", "Name is required");
-
-            var result = await _controller.Update(dto.Id, dto);
 
             result.Should().BeOfType<BadRequestObjectResult>();
         }

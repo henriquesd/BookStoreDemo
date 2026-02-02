@@ -148,9 +148,10 @@ namespace BookStore.Domain.Services
                 return basicValidation;
             }
 
-            if (book.Id <= 0)
+            var idValidation = ValidateId(book.Id);
+            if (!idValidation.Success)
             {
-                return new OperationResult<Book>(false, "Invalid book ID");
+                return new OperationResult<Book>(false, idValidation.Message);
             }
 
             return new OperationResult<Book>(true, null);

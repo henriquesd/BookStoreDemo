@@ -1,8 +1,6 @@
-﻿using BookStore.API.Dtos;
-using BookStore.API.Dtos.Category;
+﻿using BookStore.API.Dtos.Category;
 using BookStore.API.Mappings;
 using BookStore.Domain.Interfaces;
-using BookStore.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers
@@ -67,11 +65,6 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Add(CategoryAddDto categoryDto)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var category = categoryDto.ToModel();
             var categoryResult = await _categoryService.Add(category);
 
@@ -94,11 +87,6 @@ namespace BookStore.API.Controllers
             if (id != categoryDto.Id)
             {
                 return BadRequest(new { message = "ID mismatch" });
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
             }
 
             var category = categoryDto.ToModel();

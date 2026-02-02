@@ -1,8 +1,6 @@
-﻿using BookStore.API.Dtos;
-using BookStore.API.Dtos.Book;
+﻿using BookStore.API.Dtos.Book;
 using BookStore.API.Mappings;
 using BookStore.Domain.Interfaces;
-using BookStore.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.API.Controllers
@@ -85,11 +83,6 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Add(BookAddDto bookDto)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var book = bookDto.ToModel();
             var bookResult = await _bookService.Add(book);
 
@@ -112,11 +105,6 @@ namespace BookStore.API.Controllers
             if (id != bookDto.Id)
             {
                 return BadRequest(new { message = "ID mismatch" });
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
             }
 
             var book = bookDto.ToModel();

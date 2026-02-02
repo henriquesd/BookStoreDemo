@@ -7,7 +7,6 @@
 # Dynamic Variables:
 # {{$timestamp}}  - Unix timestamp (RECOMMENDED - unique & readable)
 # {{$randomInt}}  - Random integer 0-1000
-# {{$guid}}       - Unique GUID
 ###############################################################################
 
 ###############################################################################
@@ -46,8 +45,7 @@ Content-Type: {{contentType}}
   "name": ""
 }
 
-### Update Category - Full Workflow (SAFE)
-# Step 1: Create category to update
+### Step 1: Create category to update
 # @name catToUpdate
 POST {{baseUrl}}/api/categories
 Content-Type: {{contentType}}
@@ -56,16 +54,23 @@ Content-Type: {{contentType}}
   "name": "ToUpdate_{{$timestamp}}"
 }
 
-###
-# Step 2: Capture ID and update
-@updateCatId = {{catToUpdate.response.body.$.payload.id}}
-
-###
+### Step 2: Update category (run Step 1 first)
+@updateCatId = {{catToUpdate.response.body.$.id}}
 PUT {{baseUrl}}/api/categories/{{updateCatId}}
 Content-Type: {{contentType}}
 
 {
   "id": {{updateCatId}},
+  "name": "Updated_{{$timestamp}}"
+}
+
+### Update Category by ID (standalone - prompts for ID)
+@catIdToUpdate = {{$prompt Category ID to update}}
+PUT {{baseUrl}}/api/categories/{{catIdToUpdate}}
+Content-Type: {{contentType}}
+
+{
+  "id": {{catIdToUpdate}},
   "name": "Updated_{{$timestamp}}"
 }
 
@@ -87,8 +92,7 @@ Content-Type: {{contentType}}
   "name": "Non-existent Category"
 }
 
-### Delete Category - Full Workflow (SAFE)
-# Step 1: Create category to delete
+### Step 1: Create category to delete
 # @name catToDelete
 POST {{baseUrl}}/api/categories
 Content-Type: {{contentType}}
@@ -97,12 +101,13 @@ Content-Type: {{contentType}}
   "name": "ToDelete_{{$timestamp}}"
 }
 
-###
-# Step 2: Delete it
-@deleteCatId = {{catToDelete.response.body.$.payload.id}}
-
-###
+### Step 2: Delete category (run Step 1 first)
+@deleteCatId = {{catToDelete.response.body.$.id}}
 DELETE {{baseUrl}}/api/categories/{{deleteCatId}}
+
+### Delete Category by ID (standalone - prompts for ID)
+@catIdToDelete = {{$prompt Category ID to delete}}
+DELETE {{baseUrl}}/api/categories/{{catIdToDelete}}
 
 ### Delete Category - Not Found (ERROR TEST - Should return 404)
 DELETE {{baseUrl}}/api/categories/999
@@ -175,8 +180,7 @@ Content-Type: {{contentType}}
   "categoryId": 1
 }
 
-### Update Book - Full Workflow (SAFE)
-# Step 1: Create book to update
+### Step 1: Create book to update
 # @name bookToUpdate
 POST {{baseUrl}}/api/books
 Content-Type: {{contentType}}
@@ -190,16 +194,28 @@ Content-Type: {{contentType}}
   "categoryId": 1
 }
 
-###
-# Step 2: Capture ID and update
-@updateBookId = {{bookToUpdate.response.body.$.payload.id}}
-
-###
+### Step 2: Update book (run Step 1 first)
+@updateBookId = {{bookToUpdate.response.body.$.id}}
 PUT {{baseUrl}}/api/books/{{updateBookId}}
 Content-Type: {{contentType}}
 
 {
   "id": {{updateBookId}},
+  "name": "Updated_{{$timestamp}}",
+  "author": "Test Author",
+  "description": "Updated description",
+  "value": 29.99,
+  "publishDate": "2024-01-15",
+  "categoryId": 1
+}
+
+### Update Book by ID (standalone - prompts for ID)
+@bookIdToUpdate = {{$prompt Book ID to update}}
+PUT {{baseUrl}}/api/books/{{bookIdToUpdate}}
+Content-Type: {{contentType}}
+
+{
+  "id": {{bookIdToUpdate}},
   "name": "Updated_{{$timestamp}}",
   "author": "Test Author",
   "description": "Updated description",
@@ -250,8 +266,7 @@ Content-Type: {{contentType}}
   "categoryId": 1
 }
 
-### Delete Book - Full Workflow (SAFE)
-# Step 1: Create book to delete
+### Step 1: Create book to delete
 # @name bookToDelete
 POST {{baseUrl}}/api/books
 Content-Type: {{contentType}}
@@ -265,12 +280,13 @@ Content-Type: {{contentType}}
   "categoryId": 1
 }
 
-###
-# Step 2: Delete it
-@deleteBookId = {{bookToDelete.response.body.$.payload.id}}
-
-###
+### Step 2: Delete book (run Step 1 first)
+@deleteBookId = {{bookToDelete.response.body.$.id}}
 DELETE {{baseUrl}}/api/books/{{deleteBookId}}
+
+### Delete Book by ID (standalone - prompts for ID)
+@bookIdToDelete = {{$prompt Book ID to delete}}
+DELETE {{baseUrl}}/api/books/{{bookIdToDelete}}
 
 ### Delete Book - Not Found (ERROR TEST - Should return 404)
 DELETE {{baseUrl}}/api/books/999
