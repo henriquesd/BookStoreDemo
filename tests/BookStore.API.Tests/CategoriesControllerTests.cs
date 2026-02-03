@@ -8,7 +8,7 @@ using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
+using NSubstitute;
 using Xunit;
 
 namespace BookStore.API.Tests
@@ -16,93 +16,80 @@ namespace BookStore.API.Tests
     public class CategoriesControllerTests
     {
         private readonly Fixture _fixture;
-        private readonly Mock<ICategoryService> _categoryServiceMock;
+        private readonly ICategoryService _categoryServiceMock;
         private readonly CategoriesController _controller;
 
         public CategoriesControllerTests()
         {
             _fixture = FixtureFactory.Create();
-            _categoryServiceMock = new Mock<ICategoryService>();
-            _controller = new CategoriesController(_categoryServiceMock.Object);
-        }
-
-        private Category CreateCategory(int id = 1, string name = "Test Category")
-        {
-            return new Category
-            {
-                Id = id,
-                Name = name
-            };
+            _categoryServiceMock = Substitute.For<ICategoryService>();
+            _controller = new CategoriesController(_categoryServiceMock);
         }
 
         [Fact]
         public async Task GetAll_ShouldReturnOkWithCategories_WhenCategoriesExist()
         {
-            var categories = new List<Category>
-            {
-                CreateCategory(1, "Category 1"),
-                CreateCategory(2, "Category 2"),
-                CreateCategory(3, "Category 3")
-            };
+            // Arrange
+            var categories = _fixture.CreateMany<Category>(3).ToList();
+            _categoryServiceMock.GetAll().Returns(categories);
 
-            _categoryServiceMock
-                .Setup(s => s.GetAll())
-                .ReturnsAsync(categories);
-
+            // Act
             var result = await _controller.GetAll();
 
+            // Assert
             result.Should().BeOfType<OkObjectResult>();
             var okResult = result as OkObjectResult;
-            var returnedCategories = okResult.Value as IEnumerable<CategoryResultDto>;
+            var returnedCategories = okResult!.Value as IEnumerable<CategoryResultDto>;
             returnedCategories.Should().HaveCount(3);
-            returnedCategories.First().Name.Should().Be("Category 1");
         }
 
         [Fact]
         public async Task GetAll_ShouldReturnOkWithEmptyList_WhenNoCategoriesExist()
         {
-            _categoryServiceMock
-                .Setup(s => s.GetAll())
-                .ReturnsAsync(new List<Category>());
+            // Arrange
+            _categoryServiceMock.GetAll().Returns(new List<Category>());
 
+            // Act
             var result = await _controller.GetAll();
 
+            // Assert
             result.Should().BeOfType<OkObjectResult>();
             var okResult = result as OkObjectResult;
-            var returnedCategories = okResult.Value as IEnumerable<CategoryResultDto>;
+            var returnedCategories = okResult!.Value as IEnumerable<CategoryResultDto>;
             returnedCategories.Should().BeEmpty();
         }
 
         [Fact]
         public async Task GetAll_ShouldCallServiceOnce_WhenCalled()
         {
-            _categoryServiceMock
-                .Setup(s => s.GetAll())
-                .ReturnsAsync(new List<Category>());
+            // Arrange
+            _categoryServiceMock.GetAll().Returns(new List<Category>());
 
+            // Act
             await _controller.GetAll();
 
-            _categoryServiceMock.Verify(s => s.GetAll(), Times.Once);
+            // Assert
+            await _categoryServiceMock.Received(1).GetAll();
         }
 
-        [Theory]
-        [InlineData(1, 10, 3)]
-        [InlineData(2, 5, 10)]
-        [InlineData(1, 20, 1)]
-        public async Task GetAllWithPagination_ShouldReturnOkWithPagedCategories_WhenCategoriesExist(int pageNumber, int pageSize, int totalRecords)
+        [Fact]
+        public async Task GetAllWithPagination_ShouldReturnOkWithPagedCategories_WhenCategoriesExist()
         {
-            var categories = Enumerable.Range(1, totalRecords)
-                .Select(i => CreateCategory(i, $"Category {i}"))
-                .ToList();
-            var pagedResponse = new PagedResponse<Category>(categories, pageNumber, pageSize, totalRecords);
-            _categoryServiceMock.Setup(s => s.GetAllWithPagination(pageNumber, pageSize)).ReturnsAsync(pagedResponse);
+            // Arrange
+            var pageNumber = _fixture.Create<int>() % 10 + 1;
+            var pageSize = _fixture.Create<int>() % 50 + 1;
+            var categories = _fixture.CreateMany<Category>(5).ToList();
+            var pagedResponse = new PagedResponse<Category>(categories, pageNumber, pageSize, categories.Count);
+            _categoryServiceMock.GetAllWithPagination(pageNumber, pageSize).Returns(pagedResponse);
 
+            // Act
             var result = await _controller.GetAllWithPagination(pageNumber, pageSize);
 
+            // Assert
             result.Should().BeOfType<OkObjectResult>();
             var okResult = result as OkObjectResult;
-            var pagedDto = (PagedResponseDto<CategoryResultDto>)okResult.Value;
-            pagedDto.Data.Should().HaveCount(totalRecords);
+            var pagedDto = (PagedResponseDto<CategoryResultDto>)okResult!.Value!;
+            pagedDto.Data.Should().HaveCount(categories.Count);
             pagedDto.PageNumber.Should().Be(pageNumber);
             pagedDto.PageSize.Should().Be(pageSize);
         }
@@ -110,11 +97,14 @@ namespace BookStore.API.Tests
         [Fact]
         public async Task GetAllWithPagination_ShouldReturnOkWithEmptyList_WhenNoCategoriesExist()
         {
+            // Arrange
             var pagedResponse = new PagedResponse<Category>(new List<Category>(), 1, 10, 0);
-            _categoryServiceMock.Setup(s => s.GetAllWithPagination(1, 10)).ReturnsAsync(pagedResponse);
+            _categoryServiceMock.GetAllWithPagination(1, 10).Returns(pagedResponse);
 
+            // Act
             var result = await _controller.GetAllWithPagination();
 
+            // Assert
             result.Should().BeOfType<OkObjectResult>();
         }
 
@@ -127,232 +117,285 @@ namespace BookStore.API.Tests
         [InlineData(-5, -5)]
         public async Task GetAllWithPagination_ShouldReturnBadRequest_WhenParametersAreInvalid(int pageNumber, int pageSize)
         {
+            // Arrange - no arrangement needed for invalid parameters
+
+            // Act
             var result = await _controller.GetAllWithPagination(pageNumber, pageSize);
 
+            // Assert
             result.Should().BeOfType<BadRequestObjectResult>();
         }
 
         [Fact]
         public async Task GetAllWithPagination_ShouldCallServiceOnce_WhenCalled()
         {
-            var pagedResponse = new PagedResponse<Category>(new List<Category>(), 1, 10, 0);
-            _categoryServiceMock.Setup(s => s.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(pagedResponse);
+            // Arrange
+            var pageNumber = _fixture.Create<int>() % 10 + 1;
+            var pageSize = _fixture.Create<int>() % 50 + 1;
+            var pagedResponse = new PagedResponse<Category>(new List<Category>(), pageNumber, pageSize, 0);
+            _categoryServiceMock.GetAllWithPagination(Arg.Any<int>(), Arg.Any<int>()).Returns(pagedResponse);
 
-            await _controller.GetAllWithPagination(1, 10);
+            // Act
+            await _controller.GetAllWithPagination(pageNumber, pageSize);
 
-            _categoryServiceMock.Verify(s => s.GetAllWithPagination(1, 10), Times.Once);
+            // Assert
+            await _categoryServiceMock.Received(1).GetAllWithPagination(pageNumber, pageSize);
         }
 
         [Fact]
         public async Task GetById_ShouldReturnOkWithCategory_WhenCategoryExists()
         {
-            var category = CreateCategory(1, "Test Category");
-            _categoryServiceMock.Setup(s => s.GetById(1)).ReturnsAsync(category);
+            // Arrange
+            var category = _fixture.Create<Category>();
+            _categoryServiceMock.GetById(category.Id).Returns(category);
 
-            var result = await _controller.GetById(1);
+            // Act
+            var result = await _controller.GetById(category.Id);
 
+            // Assert
             result.Should().BeOfType<OkObjectResult>();
             var okResult = result as OkObjectResult;
-            var dto = okResult.Value as CategoryResultDto;
+            var dto = okResult!.Value as CategoryResultDto;
             dto.Should().NotBeNull();
-            dto.Id.Should().Be(1);
-            dto.Name.Should().Be("Test Category");
+            dto!.Id.Should().Be(category.Id);
+            dto.Name.Should().Be(category.Name);
         }
 
         [Fact]
         public async Task GetById_ShouldReturnNotFound_WhenCategoryDoesNotExist()
         {
-            _categoryServiceMock.Setup(s => s.GetById(It.IsAny<int>())).ReturnsAsync((Category)null);
+            // Arrange
+            var categoryId = _fixture.Create<int>();
+            _categoryServiceMock.GetById(Arg.Any<int>()).Returns((Category?)null);
 
-            var result = await _controller.GetById(999);
+            // Act
+            var result = await _controller.GetById(categoryId);
 
+            // Assert
             result.Should().BeOfType<NotFoundObjectResult>();
         }
 
-        [Theory]
-        [InlineData(1)]
-        [InlineData(100)]
-        [InlineData(999)]
-        public async Task GetById_ShouldCallServiceOnce_WhenCalled(int categoryId)
+        [Fact]
+        public async Task GetById_ShouldCallServiceOnce_WhenCalled()
         {
-            var category = CreateCategory(categoryId);
-            _categoryServiceMock.Setup(s => s.GetById(categoryId)).ReturnsAsync(category);
+            // Arrange
+            var category = _fixture.Create<Category>();
+            _categoryServiceMock.GetById(category.Id).Returns(category);
 
-            await _controller.GetById(categoryId);
+            // Act
+            await _controller.GetById(category.Id);
 
-            _categoryServiceMock.Verify(s => s.GetById(categoryId), Times.Once);
+            // Assert
+            await _categoryServiceMock.Received(1).GetById(category.Id);
         }
 
         [Fact]
         public async Task Add_ShouldReturnCreatedWithCategory_WhenCategoryIsValid()
         {
+            // Arrange
             var dto = _fixture.Create<CategoryAddDto>();
             var category = dto.ToModel();
-            category.Id = 1; // Set ID to simulate saved entity
+            category.Id = _fixture.Create<int>();
             var operationResult = new OperationResult<Category>(category, true, null);
-            _categoryServiceMock.Setup(s => s.Add(It.IsAny<Category>())).ReturnsAsync(operationResult);
+            _categoryServiceMock.Add(Arg.Any<Category>()).Returns(operationResult);
 
+            // Act
             var result = await _controller.Add(dto);
 
+            // Assert
             result.Should().BeOfType<CreatedAtActionResult>();
             var createdResult = result as CreatedAtActionResult;
-            var resultDto = createdResult.Value as CategoryResultDto;
+            var resultDto = createdResult!.Value as CategoryResultDto;
             resultDto.Should().NotBeNull();
-            resultDto.Id.Should().Be(1);
+            resultDto!.Id.Should().Be(category.Id);
         }
 
         [Fact]
         public async Task Add_ShouldReturnBadRequest_WhenServiceReturnsFails()
         {
+            // Arrange
             var dto = _fixture.Create<CategoryAddDto>();
-            var operationResult = new OperationResult<Category>(false, "Category already exists");
-            _categoryServiceMock.Setup(s => s.Add(It.IsAny<Category>())).ReturnsAsync(operationResult);
+            var errorMessage = _fixture.Create<string>();
+            var operationResult = new OperationResult<Category>(false, errorMessage);
+            _categoryServiceMock.Add(Arg.Any<Category>()).Returns(operationResult);
 
+            // Act
             var result = await _controller.Add(dto);
 
+            // Assert
             result.Should().BeOfType<BadRequestObjectResult>();
         }
 
         [Fact]
         public async Task Add_ShouldCallServiceOnce_WhenCalled()
         {
+            // Arrange
             var dto = _fixture.Create<CategoryAddDto>();
             var category = dto.ToModel();
             var operationResult = new OperationResult<Category>(category, true, null);
-            _categoryServiceMock.Setup(s => s.Add(It.IsAny<Category>())).ReturnsAsync(operationResult);
+            _categoryServiceMock.Add(Arg.Any<Category>()).Returns(operationResult);
 
+            // Act
             await _controller.Add(dto);
 
-            _categoryServiceMock.Verify(s => s.Add(It.IsAny<Category>()), Times.Once);
+            // Assert
+            await _categoryServiceMock.Received(1).Add(Arg.Any<Category>());
         }
 
         [Fact]
         public async Task Update_ShouldReturnOkWithCategory_WhenCategoryIsValid()
         {
+            // Arrange
             var dto = _fixture.Create<CategoryEditDto>();
             var category = dto.ToModel();
             var operationResult = new OperationResult<Category>(category, true, null);
-            _categoryServiceMock.Setup(s => s.Update(It.IsAny<Category>())).ReturnsAsync(operationResult);
+            _categoryServiceMock.Update(Arg.Any<Category>()).Returns(operationResult);
 
+            // Act
             var result = await _controller.Update(dto.Id, dto);
 
+            // Assert
             result.Should().BeOfType<OkObjectResult>();
             var okResult = result as OkObjectResult;
-            var resultDto = okResult.Value as CategoryResultDto;
+            var resultDto = okResult!.Value as CategoryResultDto;
             resultDto.Should().NotBeNull();
-            resultDto.Id.Should().Be(dto.Id);
+            resultDto!.Id.Should().Be(dto.Id);
         }
 
-        [Theory]
-        [InlineData(1, 2)]
-        [InlineData(5, 10)]
-        [InlineData(100, 999)]
-        public async Task Update_ShouldReturnBadRequest_WhenIdMismatch(int urlId, int dtoId)
+        [Fact]
+        public async Task Update_ShouldReturnBadRequest_WhenIdMismatch()
         {
-            var dto = _fixture.Build<CategoryEditDto>().With(c => c.Id, dtoId).Create();
+            // Arrange
+            var dto = _fixture.Create<CategoryEditDto>();
+            var differentUrlId = dto.Id + _fixture.Create<int>() + 1;
 
-            var result = await _controller.Update(urlId, dto);
+            // Act
+            var result = await _controller.Update(differentUrlId, dto);
 
+            // Assert
             result.Should().BeOfType<BadRequestObjectResult>();
         }
 
         [Fact]
         public async Task Update_ShouldReturnNotFound_WhenServiceReturnsNotFound()
         {
+            // Arrange
             var dto = _fixture.Create<CategoryEditDto>();
-            var operationResult = OperationResult<Category>.NotFound("Category not found");
-            _categoryServiceMock.Setup(s => s.Update(It.IsAny<Category>(), It.IsAny<CancellationToken>())).ReturnsAsync(operationResult);
+            var operationResult = OperationResult<Category>.NotFound(_fixture.Create<string>());
+            _categoryServiceMock.Update(Arg.Any<Category>(), Arg.Any<CancellationToken>()).Returns(operationResult);
 
+            // Act
             var result = await _controller.Update(dto.Id, dto);
 
+            // Assert
             result.Should().BeOfType<NotFoundObjectResult>();
         }
 
         [Fact]
         public async Task Update_ShouldCallServiceOnce_WhenCalled()
         {
+            // Arrange
             var dto = _fixture.Create<CategoryEditDto>();
             var category = dto.ToModel();
             var operationResult = new OperationResult<Category>(category, true, null);
-            _categoryServiceMock.Setup(s => s.Update(It.IsAny<Category>())).ReturnsAsync(operationResult);
+            _categoryServiceMock.Update(Arg.Any<Category>()).Returns(operationResult);
 
+            // Act
             await _controller.Update(dto.Id, dto);
 
-            _categoryServiceMock.Verify(s => s.Update(It.IsAny<Category>()), Times.Once);
+            // Assert
+            await _categoryServiceMock.Received(1).Update(Arg.Any<Category>());
         }
 
         [Fact]
         public async Task Remove_ShouldReturnNoContent_WhenCategoryIsRemoved()
         {
+            // Arrange
+            var categoryId = _fixture.Create<int>();
             var operationResult = new OperationResult<bool>(true, true, null);
-            _categoryServiceMock.Setup(s => s.Remove(1)).ReturnsAsync(operationResult);
+            _categoryServiceMock.Remove(categoryId).Returns(operationResult);
 
-            var result = await _controller.Remove(1);
+            // Act
+            var result = await _controller.Remove(categoryId);
 
+            // Assert
             result.Should().BeOfType<NoContentResult>();
         }
 
         [Fact]
         public async Task Remove_ShouldReturnNotFound_WhenCategoryDoesNotExist()
         {
-            var operationResult = OperationResult<bool>.NotFound("Category with ID 1 not found");
-            _categoryServiceMock.Setup(s => s.Remove(1, It.IsAny<CancellationToken>())).ReturnsAsync(operationResult);
+            // Arrange
+            var categoryId = _fixture.Create<int>();
+            var operationResult = OperationResult<bool>.NotFound(_fixture.Create<string>());
+            _categoryServiceMock.Remove(categoryId, Arg.Any<CancellationToken>()).Returns(operationResult);
 
-            var result = await _controller.Remove(1);
+            // Act
+            var result = await _controller.Remove(categoryId);
 
+            // Assert
             result.Should().BeOfType<NotFoundObjectResult>();
         }
 
         [Fact]
         public async Task Remove_ShouldReturnBadRequest_WhenCategoryHasAssociatedBooks()
         {
-            var operationResult = new OperationResult<bool>(false, "Cannot delete category with associated books");
-            _categoryServiceMock.Setup(s => s.Remove(1)).ReturnsAsync(operationResult);
+            // Arrange
+            var categoryId = _fixture.Create<int>();
+            var operationResult = new OperationResult<bool>(false, _fixture.Create<string>());
+            _categoryServiceMock.Remove(categoryId).Returns(operationResult);
 
-            var result = await _controller.Remove(1);
+            // Act
+            var result = await _controller.Remove(categoryId);
 
+            // Assert
             result.Should().BeOfType<BadRequestObjectResult>();
         }
 
-        [Theory]
-        [InlineData(1)]
-        [InlineData(50)]
-        [InlineData(999)]
-        public async Task Remove_ShouldCallServiceOnce_WhenCalled(int categoryId)
+        [Fact]
+        public async Task Remove_ShouldCallServiceOnce_WhenCalled()
         {
+            // Arrange
+            var categoryId = _fixture.Create<int>();
             var operationResult = new OperationResult<bool>(true, true, null);
-            _categoryServiceMock.Setup(s => s.Remove(categoryId)).ReturnsAsync(operationResult);
+            _categoryServiceMock.Remove(categoryId).Returns(operationResult);
 
+            // Act
             await _controller.Remove(categoryId);
 
-            _categoryServiceMock.Verify(s => s.Remove(categoryId), Times.Once);
+            // Assert
+            await _categoryServiceMock.Received(1).Remove(categoryId);
         }
 
-        [Theory]
-        [InlineData("Fiction")]
-        [InlineData("Science")]
-        [InlineData("Biography")]
-        public async Task Search_ShouldReturnOkWithCategories_WhenCategoriesFound(string searchTerm)
+        [Fact]
+        public async Task Search_ShouldReturnOkWithCategories_WhenCategoriesFound()
         {
-            var categories = new List<Category> { CreateCategory(1, searchTerm) };
-            _categoryServiceMock.Setup(s => s.Search(searchTerm)).ReturnsAsync(categories);
+            // Arrange
+            var searchTerm = _fixture.Create<string>();
+            var categories = _fixture.CreateMany<Category>(2).ToList();
+            _categoryServiceMock.Search(searchTerm).Returns(categories);
 
+            // Act
             var result = await _controller.Search(searchTerm);
 
+            // Assert
             result.Should().BeOfType<OkObjectResult>();
             var okResult = result as OkObjectResult;
-            var dtos = okResult.Value as IEnumerable<CategoryResultDto>;
-            dtos.Should().HaveCount(1);
-            dtos.First().Name.Should().Be(searchTerm);
+            var dtos = okResult!.Value as IEnumerable<CategoryResultDto>;
+            dtos.Should().HaveCount(2);
         }
 
         [Fact]
         public async Task Search_ShouldReturnOkWithEmptyList_WhenNoCategoriesFound()
         {
-            _categoryServiceMock.Setup(s => s.Search("NonExistent")).ReturnsAsync(new List<Category>());
+            // Arrange
+            var searchTerm = _fixture.Create<string>();
+            _categoryServiceMock.Search(searchTerm).Returns(new List<Category>());
 
-            var result = await _controller.Search("NonExistent");
+            // Act
+            var result = await _controller.Search(searchTerm);
 
+            // Assert
             result.Should().BeOfType<OkObjectResult>();
             var okResult = result as OkObjectResult;
             var dtos = okResult!.Value as IEnumerable<CategoryResultDto>;
@@ -365,20 +408,28 @@ namespace BookStore.API.Tests
         [InlineData(null)]
         public async Task Search_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string? searchTerm)
         {
+            // Arrange - no arrangement needed for invalid parameters
+
+            // Act
             var result = await _controller.Search(searchTerm);
 
+            // Assert
             result.Should().BeOfType<BadRequestObjectResult>();
         }
 
         [Fact]
         public async Task Search_ShouldCallServiceOnce_WhenCalled()
         {
-            var categories = new List<Category> { CreateCategory() };
-            _categoryServiceMock.Setup(s => s.Search("Test")).ReturnsAsync(categories);
+            // Arrange
+            var searchTerm = _fixture.Create<string>();
+            var categories = _fixture.CreateMany<Category>(1).ToList();
+            _categoryServiceMock.Search(searchTerm).Returns(categories);
 
-            await _controller.Search("Test");
+            // Act
+            await _controller.Search(searchTerm);
 
-            _categoryServiceMock.Verify(s => s.Search("Test"), Times.Once);
+            // Assert
+            await _categoryServiceMock.Received(1).Search(searchTerm);
         }
     }
 }

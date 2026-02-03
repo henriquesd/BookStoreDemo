@@ -12,7 +12,7 @@ A RESTful Web API for managing a bookstore, built with .NET 10 following Clean A
 
 ### Testing
 - xUnit
-- Moq
+- NSubstitute
 - FluentAssertions
 - AutoFixture
 - SQLite In-Memory database

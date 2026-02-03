@@ -5,7 +5,7 @@ using BookStore.Domain.Models;
 using BookStore.Domain.Services;
 using BookStore.Domain.Tests.Helpers;
 using FluentAssertions;
-using Moq;
+using NSubstitute;
 using Xunit;
 
 namespace BookStore.Domain.Tests
@@ -13,31 +13,29 @@ namespace BookStore.Domain.Tests
     public class BookServiceTests
     {
         private readonly Fixture _fixture;
-        private readonly Mock<IBookRepository> _bookRepositoryMock;
-        private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
+        private readonly IBookRepository _bookRepositoryMock;
+        private readonly ICategoryRepository _categoryRepositoryMock;
         private readonly BookService _service;
 
         public BookServiceTests()
         {
             _fixture = FixtureFactory.Create();
-            _bookRepositoryMock = new Mock<IBookRepository>();
-            _categoryRepositoryMock = new Mock<ICategoryRepository>();
-            _service = new BookService(_bookRepositoryMock.Object, _categoryRepositoryMock.Object);
+            _bookRepositoryMock = Substitute.For<IBookRepository>();
+            _categoryRepositoryMock = Substitute.For<ICategoryRepository>();
+            _service = new BookService(_bookRepositoryMock, _categoryRepositoryMock);
         }
 
         [Fact]
         public async Task GetAll_ShouldReturnListOfBooks_WhenBooksExist()
         {
-            var books = _fixture
-                .CreateMany<Book>(3).
-                ToList();
+            // Arrange
+            var books = _fixture.CreateMany<Book>(3).ToList();
+            _bookRepositoryMock.GetAll().Returns(books);
 
-            _bookRepositoryMock
-                .Setup(r => r.GetAll())
-                .ReturnsAsync(books);
-
+            // Act
             var result = await _service.GetAll();
 
+            // Assert
             result.Should().NotBeNull();
             result.Should().BeOfType<List<Book>>();
             result.Should().HaveCount(3);
@@ -46,44 +44,43 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task GetAll_ShouldReturnNull_WhenBooksDoNotExist()
         {
-            _bookRepositoryMock
-                .Setup(r => r.GetAll())
-                .ReturnsAsync((List<Book>)null);
+            // Arrange
+            _bookRepositoryMock.GetAll().Returns((List<Book>?)null);
 
+            // Act
             var result = await _service.GetAll();
 
+            // Assert
             result.Should().BeNull();
         }
 
         [Fact]
         public async Task GetAll_ShouldCallRepositoryOnce_WhenCalled()
         {
-            _bookRepositoryMock
-                .Setup(r => r.GetAll())
-                .ReturnsAsync(new List<Book>());
+            // Arrange
+            _bookRepositoryMock.GetAll().Returns(new List<Book>());
 
+            // Act
             await _service.GetAll();
 
-            _bookRepositoryMock.Verify(r => r.GetAll(), Times.Once);
+            // Assert
+            await _bookRepositoryMock.Received(1).GetAll();
         }
 
-        [Theory]
-        [InlineData(1, 10)]
-        [InlineData(2, 5)]
-        [InlineData(1, 20)]
-        public async Task GetAllWithPagination_ShouldReturnPagedResponse_WhenBooksExist(int pageNumber, int pageSize)
+        [Fact]
+        public async Task GetAllWithPagination_ShouldReturnPagedResponse_WhenBooksExist()
         {
-            var books = _fixture
-                .CreateMany<Book>(5
-                ).ToList();
-
+            // Arrange
+            var pageNumber = _fixture.Create<int>() % 10 + 1;
+            var pageSize = _fixture.Create<int>() % 50 + 1;
+            var books = _fixture.CreateMany<Book>(5).ToList();
             var pagedResponse = new PagedResponse<Book>(books, pageNumber, pageSize, books.Count);
-            _bookRepositoryMock
-                .Setup(r => r.GetAllWithPagination(pageNumber, pageSize))
-                .ReturnsAsync(pagedResponse);
+            _bookRepositoryMock.GetAllWithPagination(pageNumber, pageSize).Returns(pagedResponse);
 
+            // Act
             var result = await _service.GetAllWithPagination(pageNumber, pageSize);
 
+            // Assert
             result.Should().NotBeNull();
             result.Should().BeOfType<PagedResponse<Book>>();
             result.Data.Should().HaveCount(5);
@@ -92,13 +89,16 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task GetAllWithPagination_ShouldReturnEmptyList_WhenBooksDoNotExist()
         {
-            var pagedResponse = new PagedResponse<Book>(new List<Book>(), 1, 10, 0);
-            _bookRepositoryMock
-                .Setup(r => r.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>()))
-                .ReturnsAsync(pagedResponse);
+            // Arrange
+            var pageNumber = _fixture.Create<int>() % 10 + 1;
+            var pageSize = _fixture.Create<int>() % 50 + 1;
+            var pagedResponse = new PagedResponse<Book>(new List<Book>(), pageNumber, pageSize, 0);
+            _bookRepositoryMock.GetAllWithPagination(Arg.Any<int>(), Arg.Any<int>()).Returns(pagedResponse);
 
-            var result = await _service.GetAllWithPagination(1, 10);
+            // Act
+            var result = await _service.GetAllWithPagination(pageNumber, pageSize);
 
+            // Assert
             result.Should().NotBeNull();
             result.Data.Should().BeEmpty();
         }
@@ -106,132 +106,128 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task GetAllWithPagination_ShouldCallRepositoryOnce_WhenCalled()
         {
+            // Arrange
+            var pageNumber = _fixture.Create<int>() % 10 + 1;
+            var pageSize = _fixture.Create<int>() % 50 + 1;
             var pagedResponse = _fixture.Create<PagedResponse<Book>>();
-            _bookRepositoryMock
-                .Setup(r => r.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>()))
-                .ReturnsAsync(pagedResponse);
+            _bookRepositoryMock.GetAllWithPagination(Arg.Any<int>(), Arg.Any<int>()).Returns(pagedResponse);
 
-            await _service.GetAllWithPagination(1, 10);
+            // Act
+            await _service.GetAllWithPagination(pageNumber, pageSize);
 
-            _bookRepositoryMock.Verify(r => r.GetAllWithPagination(It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+            // Assert
+            await _bookRepositoryMock.Received(1).GetAllWithPagination(Arg.Any<int>(), Arg.Any<int>());
         }
 
-        [Theory]
-        [InlineData(1)]
-        [InlineData(100)]
-        [InlineData(999)]
-        public async Task GetById_ShouldReturnBook_WhenBookExists(int bookId)
+        [Fact]
+        public async Task GetById_ShouldReturnBook_WhenBookExists()
         {
-            var book = _fixture
-                .Build<Book>()
-                .With(b => b.Id, bookId)
-                .Create();
+            // Arrange
+            var book = _fixture.Create<Book>();
+            _bookRepositoryMock.GetById(book.Id).Returns(book);
 
-            _bookRepositoryMock
-                .Setup(r => r.GetById(bookId))
-                .ReturnsAsync(book);
+            // Act
+            var result = await _service.GetById(book.Id);
 
-            var result = await _service.GetById(bookId);
-
+            // Assert
             result.Should().NotBeNull();
             result.Should().BeOfType<Book>();
-            result.Id.Should().Be(bookId);
+            result!.Id.Should().Be(book.Id);
         }
 
         [Fact]
         public async Task GetById_ShouldReturnNull_WhenBookDoesNotExist()
         {
-            _bookRepositoryMock
-                .Setup(r => r.GetById(It.IsAny<int>()))
-                .ReturnsAsync((Book)null);
+            // Arrange
+            var bookId = _fixture.Create<int>();
+            _bookRepositoryMock.GetById(Arg.Any<int>()).Returns((Book?)null);
 
-            var result = await _service.GetById(999);
+            // Act
+            var result = await _service.GetById(bookId);
 
+            // Assert
             result.Should().BeNull();
         }
 
         [Fact]
         public async Task GetById_ShouldCallRepositoryOnce_WhenCalled()
         {
-            _bookRepositoryMock
-                .Setup(r => r.GetById(1))
-                .ReturnsAsync(new Book());
+            // Arrange
+            var book = _fixture.Create<Book>();
+            _bookRepositoryMock.GetById(book.Id).Returns(book);
 
-            await _service.GetById(1);
+            // Act
+            await _service.GetById(book.Id);
 
-            _bookRepositoryMock.Verify(r => r.GetById(1), Times.Once);
+            // Assert
+            await _bookRepositoryMock.Received(1).GetById(book.Id);
         }
 
-        [Theory]
-        [InlineData(1)]
-        [InlineData(5)]
-        [InlineData(10)]
-        public async Task GetBooksByCategory_ShouldReturnListOfBooks_WhenBooksExist(int categoryId)
+        [Fact]
+        public async Task GetBooksByCategory_ShouldReturnListOfBooks_WhenBooksExist()
         {
-            var books = _fixture
-                .Build<Book>()
+            // Arrange
+            var categoryId = _fixture.Create<int>();
+            var books = _fixture.Build<Book>()
                 .With(b => b.CategoryId, categoryId)
                 .CreateMany(3)
                 .ToList();
+            _bookRepositoryMock.GetBooksByCategory(categoryId).Returns(books);
 
-            _bookRepositoryMock
-                .Setup(r => r.GetBooksByCategory(categoryId))
-                .ReturnsAsync(books);
-
+            // Act
             var result = await _service.GetBooksByCategory(categoryId);
 
+            // Assert
             result.Should().NotBeNull();
             result.Should().BeOfType<List<Book>>();
             result.Should().HaveCount(3);
-            result.All(b => b.CategoryId == categoryId).Should().BeTrue();
+            result!.All(b => b.CategoryId == categoryId).Should().BeTrue();
         }
 
         [Fact]
         public async Task GetBooksByCategory_ShouldReturnNull_WhenBooksDoNotExist()
         {
-            _bookRepositoryMock
-                .Setup(r => r.GetBooksByCategory(It.IsAny<int>()))
-                .ReturnsAsync((IEnumerable<Book>)null);
+            // Arrange
+            var categoryId = _fixture.Create<int>();
+            _bookRepositoryMock.GetBooksByCategory(Arg.Any<int>()).Returns((IEnumerable<Book>?)null);
 
-            var result = await _service.GetBooksByCategory(999);
+            // Act
+            var result = await _service.GetBooksByCategory(categoryId);
 
+            // Assert
             result.Should().BeNull();
         }
 
         [Fact]
         public async Task GetBooksByCategory_ShouldCallRepositoryOnce_WhenCalled()
         {
-            var books = _fixture
-                .CreateMany<Book>(2)
-                .ToList();
+            // Arrange
+            var categoryId = _fixture.Create<int>();
+            var books = _fixture.CreateMany<Book>(2).ToList();
+            _bookRepositoryMock.GetBooksByCategory(categoryId).Returns(books);
 
-            _bookRepositoryMock
-                .Setup(r => r.GetBooksByCategory(1))
-                .ReturnsAsync(books);
+            // Act
+            await _service.GetBooksByCategory(categoryId);
 
-            await _service.GetBooksByCategory(1);
-
-            _bookRepositoryMock.Verify(r => r.GetBooksByCategory(1), Times.Once);
+            // Assert
+            await _bookRepositoryMock.Received(1).GetBooksByCategory(categoryId);
         }
 
-        [Theory]
-        [InlineData("Test")]
-        [InlineData("Book")]
-        [InlineData("Programming")]
-        public async Task Search_ShouldReturnListOfBooks_WhenBooksWithSearchedNameExist(string searchTerm)
+        [Fact]
+        public async Task Search_ShouldReturnListOfBooks_WhenBooksWithSearchedNameExist()
         {
-            var books = _fixture
-                .Build<Book>()
+            // Arrange
+            var searchTerm = _fixture.Create<string>();
+            var books = _fixture.Build<Book>()
                 .With(b => b.Name, searchTerm)
                 .CreateMany(2)
                 .ToList();
+            _bookRepositoryMock.Search(Arg.Any<Expression<Func<Book, bool>>>()).Returns(books);
 
-            _bookRepositoryMock
-                .Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>()))
-                .ReturnsAsync(books);
-
+            // Act
             var result = await _service.Search(searchTerm);
 
+            // Assert
             result.Should().NotBeNull();
             result.Should().BeOfType<List<Book>>();
             result.Should().HaveCount(2);
@@ -240,36 +236,44 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task Search_ShouldReturnNull_WhenBooksWithSearchedNameDoNotExist()
         {
-            _bookRepositoryMock.Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>()))
-                .ReturnsAsync((IEnumerable<Book>)null);
+            // Arrange
+            var searchTerm = _fixture.Create<string>();
+            _bookRepositoryMock.Search(Arg.Any<Expression<Func<Book, bool>>>()).Returns((IEnumerable<Book>?)null);
 
-            var result = await _service.Search("NonExistent");
+            // Act
+            var result = await _service.Search(searchTerm);
 
+            // Assert
             result.Should().BeNull();
         }
 
         [Fact]
         public async Task Search_ShouldCallRepositoryOnce_WhenCalled()
         {
+            // Arrange
+            var searchTerm = _fixture.Create<string>();
             var books = _fixture.CreateMany<Book>().ToList();
+            _bookRepositoryMock.Search(Arg.Any<Expression<Func<Book, bool>>>()).Returns(books);
 
-            _bookRepositoryMock
-                .Setup(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>()))
-                .ReturnsAsync(books);
+            // Act
+            await _service.Search(searchTerm);
 
-            await _service.Search("Test");
-
-            _bookRepositoryMock.Verify(r => r.Search(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>()), Times.Once);
+            // Assert
+            await _bookRepositoryMock.Received(1).Search(Arg.Any<Expression<Func<Book, bool>>>());
         }
 
         [Fact]
         public async Task SearchBookWithCategory_ShouldReturnListOfBooks_WhenBooksExist()
         {
+            // Arrange
+            var searchTerm = _fixture.Create<string>();
             var books = _fixture.CreateMany<Book>(3).ToList();
-            _bookRepositoryMock.Setup(r => r.SearchBookWithCategory("Test")).ReturnsAsync(books);
+            _bookRepositoryMock.SearchBookWithCategory(searchTerm).Returns(books);
 
-            var result = await _service.SearchBookWithCategory("Test");
+            // Act
+            var result = await _service.SearchBookWithCategory(searchTerm);
 
+            // Assert
             result.Should().NotBeNull();
             result.Should().BeOfType<List<Book>>();
             result.Should().HaveCount(3);
@@ -278,45 +282,48 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task SearchBookWithCategory_ShouldReturnNull_WhenBooksDoNotExist()
         {
-            _bookRepositoryMock
-                .Setup(r => r.SearchBookWithCategory(It.IsAny<string>()))
-                .ReturnsAsync((IEnumerable<Book>)null);
+            // Arrange
+            var searchTerm = _fixture.Create<string>();
+            _bookRepositoryMock.SearchBookWithCategory(Arg.Any<string>()).Returns((IEnumerable<Book>?)null);
 
-            var result = await _service.SearchBookWithCategory("NonExistent");
+            // Act
+            var result = await _service.SearchBookWithCategory(searchTerm);
 
+            // Assert
             result.Should().BeNull();
         }
 
         [Fact]
         public async Task SearchBookWithCategory_ShouldCallRepositoryOnce_WhenCalled()
         {
+            // Arrange
+            var searchTerm = _fixture.Create<string>();
             var books = _fixture.CreateMany<Book>().ToList();
-            _bookRepositoryMock
-                .Setup(r => r.SearchBookWithCategory("Test"))
-                .ReturnsAsync(books);
+            _bookRepositoryMock.SearchBookWithCategory(searchTerm).Returns(books);
 
-            await _service.SearchBookWithCategory("Test");
+            // Act
+            await _service.SearchBookWithCategory(searchTerm);
 
-            _bookRepositoryMock.Verify(r => r.SearchBookWithCategory("Test"), Times.Once);
+            // Assert
+            await _bookRepositoryMock.Received(1).SearchBookWithCategory(searchTerm);
         }
 
         [Fact]
         public async Task Add_ShouldAddBook_WhenBookNameDoesNotExist()
         {
+            // Arrange
             var book = _fixture.Create<Book>();
-
             _categoryRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
-
+                .ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
             _bookRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(false);
+                .ExistsAsync(Arg.Any<Expression<Func<Book, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false);
 
-            _bookRepositoryMock.Setup(r => r.Add(book, It.IsAny<CancellationToken>()));
-
+            // Act
             var result = await _service.Add(book);
 
+            // Assert
             result.Should().NotBeNull();
             result.Success.Should().BeTrue();
             result.Payload.Should().BeOfType<Book>();
@@ -325,14 +332,16 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task Add_ShouldNotAddBook_WhenCategoryDoesNotExist()
         {
+            // Arrange
             var book = _fixture.Create<Book>();
-
             _categoryRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(false);
+                .ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false);
 
+            // Act
             var result = await _service.Add(book);
 
+            // Assert
             result.Should().NotBeNull();
             result.Success.Should().BeFalse();
             result.Message.Should().NotBeNullOrEmpty();
@@ -341,18 +350,19 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task Add_ShouldNotAddBook_WhenBookNameAlreadyExists()
         {
+            // Arrange
             var book = _fixture.Create<Book>();
-
             _categoryRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
-
+                .ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
             _bookRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
+                .ExistsAsync(Arg.Any<Expression<Func<Book, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
 
+            // Act
             var result = await _service.Add(book);
 
+            // Assert
             result.Should().NotBeNull();
             result.Success.Should().BeFalse();
             result.Message.Should().NotBeNullOrEmpty();
@@ -361,42 +371,39 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task Add_ShouldCallRepositoryOnce_WhenBookIsValid()
         {
+            // Arrange
             var book = _fixture.Create<Book>();
-
             _categoryRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
-
+                .ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
             _bookRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(false);
+                .ExistsAsync(Arg.Any<Expression<Func<Book, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false);
 
-            _bookRepositoryMock.Setup(r => r.Add(book, It.IsAny<CancellationToken>()));
-
+            // Act
             await _service.Add(book);
 
-            _bookRepositoryMock.Verify(r => r.Add(book, It.IsAny<CancellationToken>()), Times.Once);
+            // Assert
+            await _bookRepositoryMock.Received(1).Add(book, Arg.Any<CancellationToken>());
         }
 
         [Fact]
         public async Task Update_ShouldUpdateBook_WhenBookNameDoesNotExist()
         {
+            // Arrange
             var book = _fixture.Create<Book>();
-
-            _bookRepositoryMock.Setup(r => r.GetByIdAsNoTracking(book.Id, It.IsAny<CancellationToken>())).ReturnsAsync(book);
-
+            _bookRepositoryMock.GetByIdAsNoTracking(book.Id, Arg.Any<CancellationToken>()).Returns(book);
             _categoryRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
-
+                .ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
             _bookRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(false);
+                .ExistsAsync(Arg.Any<Expression<Func<Book, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false);
 
-            _bookRepositoryMock.Setup(r => r.Update(book, It.IsAny<CancellationToken>()));
-
+            // Act
             var result = await _service.Update(book);
 
+            // Assert
             result.Should().NotBeNull();
             result.Success.Should().BeTrue();
             result.Payload.Should().BeOfType<Book>();
@@ -405,18 +412,19 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task Update_ShouldNotUpdateBook_WhenCategoryDoesNotExist()
         {
+            // Arrange
             var book = _fixture.Create<Book>();
-
             _bookRepositoryMock
-                .Setup(r => r.GetByIdAsNoTracking(book.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(book);
-
+                .GetByIdAsNoTracking(book.Id, Arg.Any<CancellationToken>())
+                .Returns(book);
             _categoryRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(false);
+                .ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false);
 
+            // Act
             var result = await _service.Update(book);
 
+            // Assert
             result.Should().NotBeNull();
             result.Success.Should().BeFalse();
             result.Message.Should().NotBeNullOrEmpty();
@@ -425,22 +433,22 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task Update_ShouldNotUpdateBook_WhenBookNameAlreadyExists()
         {
+            // Arrange
             var book = _fixture.Create<Book>();
-
             _bookRepositoryMock
-                .Setup(r => r.GetByIdAsNoTracking(book.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(book);
-
+                .GetByIdAsNoTracking(book.Id, Arg.Any<CancellationToken>())
+                .Returns(book);
             _categoryRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
-
+                .ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
             _bookRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
+                .ExistsAsync(Arg.Any<Expression<Func<Book, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
 
+            // Act
             var result = await _service.Update(book);
 
+            // Assert
             result.Should().NotBeNull();
             result.Success.Should().BeFalse();
             result.Message.Should().NotBeNullOrEmpty();
@@ -449,63 +457,65 @@ namespace BookStore.Domain.Tests
         [Fact]
         public async Task Update_ShouldCallRepositoryOnce_WhenBookIsValid()
         {
+            // Arrange
             var book = _fixture.Create<Book>();
-
             _bookRepositoryMock
-                .Setup(r => r.GetByIdAsNoTracking(book.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(book);
-
+                .GetByIdAsNoTracking(book.Id, Arg.Any<CancellationToken>())
+                .Returns(book);
             _categoryRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Category, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
-
+                .ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
             _bookRepositoryMock
-                .Setup(r => r.ExistsAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Book, bool>>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(false);
+                .ExistsAsync(Arg.Any<Expression<Func<Book, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false);
 
+            // Act
             await _service.Update(book);
 
-            _bookRepositoryMock.Verify(r => r.Update(book, It.IsAny<CancellationToken>()), Times.Once);
+            // Assert
+            await _bookRepositoryMock.Received(1).Update(book, Arg.Any<CancellationToken>());
         }
 
         [Fact]
         public async Task Remove_ShouldReturnTrue_WhenBookCanBeRemoved()
         {
+            // Arrange
             var book = _fixture.Create<Book>();
+            _bookRepositoryMock.GetById(book.Id).Returns(book);
 
-            _bookRepositoryMock
-                .Setup(r => r.GetById(book.Id))
-                .ReturnsAsync(book);
-
+            // Act
             var result = await _service.Remove(book.Id);
 
+            // Assert
             result.Success.Should().BeTrue();
         }
 
         [Fact]
         public async Task Remove_ShouldReturnFalse_WhenBookDoesNotExist()
         {
-            _bookRepositoryMock
-                .Setup(r => r.GetById(It.IsAny<int>()))
-                .ReturnsAsync((Book)null);
+            // Arrange
+            var bookId = _fixture.Create<int>();
+            _bookRepositoryMock.GetById(Arg.Any<int>()).Returns((Book?)null);
 
-            var result = await _service.Remove(999);
+            // Act
+            var result = await _service.Remove(bookId);
 
+            // Assert
             result.Success.Should().BeFalse();
         }
 
         [Fact]
         public async Task Remove_ShouldCallRepositoryOnce_WhenBookExists()
         {
+            // Arrange
             var book = _fixture.Create<Book>();
+            _bookRepositoryMock.GetById(book.Id).Returns(book);
 
-            _bookRepositoryMock
-                .Setup(r => r.GetById(book.Id))
-                .ReturnsAsync(book);
-
+            // Act
             await _service.Remove(book.Id);
 
-            _bookRepositoryMock.Verify(r => r.Remove(book), Times.Once);
+            // Assert
+            _bookRepositoryMock.Received(1).Remove(book);
         }
     }
 }

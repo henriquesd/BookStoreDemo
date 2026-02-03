@@ -1,246 +1,218 @@
-﻿using BookStore.Domain.Models;
+using AutoFixture;
+using BookStore.Domain.Models;
 using BookStore.Infrastructure.Context;
 using BookStore.Infrastructure.Repositories;
+using BookStore.Infrastructure.Tests.Helpers;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace BookStore.Infrastructure.Tests
 {
-    /// <summary>
-    /// This is another example of how to create tests for the abstract base class
-    /// </summary>
     public class RepositoryTests
     {
         public abstract class RepositoryTestsBase
         {
-
             protected readonly DbContextOptions<BookStoreDbContext> _options;
+            protected readonly Fixture _fixture;
 
             protected RepositoryTestsBase()
             {
                 _options = BookStoreHelperTests.BookStoreDbContextOptionsSQLiteInMemory();
                 BookStoreHelperTests.CreateDataBaseSQLiteInMemory(_options);
-            }
-
-            protected Category CreateCategory()
-            {
-                return new Category()
-                {
-                    Id = 4,
-                    Name = "Category Test 4",
-                };
-            }
-
-            protected List<Category> CreateCategoryList()
-            {
-                return new List<Category>()
-            {
-                new Category { Id = 1, Name = "Category Test 1" },
-                new Category { Id = 2, Name = "Category Test 2" },
-                new Category { Id = 3, Name = "Category Test 3" }
-            };
+                _fixture = FixtureFactory.Create();
             }
         }
 
         public class GetAll : RepositoryTestsBase
         {
             [Fact]
-            public async void ShouldReturnAListOfCategory_WhenCategoriesExist()
+            public async Task ShouldReturnAListOfCategory_WhenCategoriesExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var repository = new RepositoryConcreteClass(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var categories = await repository.GetAll();
+                // Arrange
+                var repository = new RepositoryConcreteClass(context);
 
-                    // Assert
-                    categories.Should().NotBeNull();
-                    categories.Should().BeOfType<List<Category>>();
-                }
+                // Act
+                var categories = await repository.GetAll();
+
+                // Assert
+                categories.Should().NotBeNull();
+                categories.Should().BeOfType<List<Category>>();
+                categories.Should().HaveCount(3);
             }
 
             [Fact]
-            public async void ShouldReturnAnEmptyList_WhenCategoriesDoNotExist()
+            public async Task ShouldReturnAnEmptyList_WhenCategoriesDoNotExist()
             {
+                // Arrange
                 await BookStoreHelperTests.CleanDataBase(_options);
+                await using var context = new BookStoreDbContext(_options);
+                var repository = new RepositoryConcreteClass(context);
 
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var repository = new RepositoryConcreteClass(context);
+                // Act
+                var categories = await repository.GetAll();
 
-                    // Act
-                    var categories = await repository.GetAll();
-
-                    // Assert
-                    categories.Should().NotBeNull();
-                    categories.Should().BeEmpty();
-                    categories.Should().BeOfType<List<Category>>();
-                }
+                // Assert
+                categories.Should().NotBeNull();
+                categories.Should().BeEmpty();
+                categories.Should().BeOfType<List<Category>>();
             }
 
             [Fact]
-            public async void ShouldReturnAListOfCategoryWithCorrectValues_WhenCategoriesExist()
+            public async Task ShouldReturnAListOfCategoryWithCorrectValues_WhenCategoriesExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var expectedCategories = CreateCategoryList();
-                    var repository = new RepositoryConcreteClass(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var categoryList = await repository.GetAll();
+                // Arrange
+                var repository = new RepositoryConcreteClass(context);
 
-                    // Assert
-                    categoryList.Count().Should().Be(3);
-                    categoryList.Should().BeEquivalentTo(categoryList);
-                }
+                // Act
+                var categoryList = await repository.GetAll();
+
+                // Assert
+                categoryList.Count().Should().Be(3);
+                categoryList.Should().AllSatisfy(c => c.Name.Should().StartWith("Category Test"));
             }
         }
 
         public class GetAllWithPagination : RepositoryTestsBase
         {
             [Fact]
-            public async void ShouldReturnAListOfCategory_WhenCategoriesExist()
+            public async Task ShouldReturnAListOfCategory_WhenCategoriesExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var repository = new RepositoryConcreteClass(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var pagedResponse = await repository.GetAllWithPagination(1, 10);
+                // Arrange
+                var repository = new RepositoryConcreteClass(context);
+                var pageNumber = 1;
+                var pageSize = 10;
 
-                    // Assert
-                    pagedResponse.Should().NotBeNull();
-                    pagedResponse.Should().BeOfType<PagedResponse<Category>>();
-                }
+                // Act
+                var pagedResponse = await repository.GetAllWithPagination(pageNumber, pageSize);
+
+                // Assert
+                pagedResponse.Should().NotBeNull();
+                pagedResponse.Should().BeOfType<PagedResponse<Category>>();
+                pagedResponse.PageNumber.Should().Be(pageNumber);
+                pagedResponse.PageSize.Should().Be(pageSize);
             }
 
             [Fact]
-            public async void ShouldReturnAnEmptyList_WhenCategoriesDoNotExist()
+            public async Task ShouldReturnAnEmptyList_WhenCategoriesDoNotExist()
             {
+                // Arrange
                 await BookStoreHelperTests.CleanDataBase(_options);
+                await using var context = new BookStoreDbContext(_options);
+                var repository = new RepositoryConcreteClass(context);
 
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var repository = new RepositoryConcreteClass(context);
+                // Act
+                var pagedResponse = await repository.GetAllWithPagination(1, 10);
 
-                    // Act
-                    var pagedResponse = await repository.GetAllWithPagination(1, 10);
-
-                    // Assert
-                    pagedResponse.Should().NotBeNull();
-                    pagedResponse.Data.Should().BeEmpty();
-                    pagedResponse.Should().BeOfType<PagedResponse<Category>>();
-                }
+                // Assert
+                pagedResponse.Should().NotBeNull();
+                pagedResponse.Data.Should().BeEmpty();
+                pagedResponse.Should().BeOfType<PagedResponse<Category>>();
             }
 
             [Fact]
-            public async void ShouldReturnAListOfCategoryWithCorrectValues_WhenCategoriesExist()
+            public async Task ShouldReturnAListOfCategoryWithCorrectValues_WhenCategoriesExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var expectedCategories = CreateCategoryList();
-                    var repository = new RepositoryConcreteClass(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var pagedResponse = await repository.GetAllWithPagination(1, 10);
+                // Arrange
+                var repository = new RepositoryConcreteClass(context);
 
-                    // Assert
-                    pagedResponse.Data.Count().Should().Be(3);
-                    pagedResponse.Data.Should().BeEquivalentTo(expectedCategories);
-                }
+                // Act
+                var pagedResponse = await repository.GetAllWithPagination(1, 10);
+
+                // Assert
+                pagedResponse.Data.Count().Should().Be(3);
+                pagedResponse.Data.Should().AllSatisfy(c => c.Name.Should().StartWith("Category Test"));
             }
         }
-
 
         public class GetById : RepositoryTestsBase
         {
             [Fact]
-            public async void ShouldReturnCategoryWithSearchedId_WhenCategoryWithSearchedIdExist()
+            public async Task ShouldReturnCategoryWithSearchedId_WhenCategoryWithSearchedIdExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var repository = new RepositoryConcreteClass(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var category = await repository.GetById(2);
+                // Arrange
+                var repository = new RepositoryConcreteClass(context);
+                var existingCategoryId = 2;
 
-                    // Assert
-                    category.Should().NotBeNull();
-                    category.Should().BeOfType<Category>();
-                }
+                // Act
+                var category = await repository.GetById(existingCategoryId);
+
+                // Assert
+                category.Should().NotBeNull();
+                category.Should().BeOfType<Category>();
+                category!.Id.Should().Be(existingCategoryId);
             }
 
             [Fact]
-            public async void ShouldReturnNull_WhenCategoryWithSearchedIdDoesNotExist()
+            public async Task ShouldReturnNull_WhenCategoryWithSearchedIdDoesNotExist()
             {
+                // Arrange
                 await BookStoreHelperTests.CleanDataBase(_options);
+                await using var context = new BookStoreDbContext(_options);
+                var repository = new RepositoryConcreteClass(context);
+                var nonExistentCategoryId = _fixture.Create<int>();
 
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var repository = new RepositoryConcreteClass(context);
+                // Act
+                var category = await repository.GetById(nonExistentCategoryId);
 
-                    // Act
-                    var category = await repository.GetById(1);
-
-                    // Assert
-                    category.Should().BeNull();
-                }
+                // Assert
+                category.Should().BeNull();
             }
 
             [Fact]
-            public async void ShouldReturnCategoryWithCorrectValues_WhenCategoryExist()
+            public async Task ShouldReturnCategoryWithCorrectValues_WhenCategoryExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var repository = new RepositoryConcreteClass(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    var expectedCategories = CreateCategoryList();
+                // Arrange
+                var repository = new RepositoryConcreteClass(context);
+                var existingCategoryId = 2;
 
-                    // Act
-                    var category = await repository.GetById(2);
+                // Act
+                var category = await repository.GetById(existingCategoryId);
 
-                    // Assert
-                    category.Should().BeEquivalentTo(expectedCategories[1]);
-                }
+                // Assert
+                category.Should().NotBeNull();
+                category!.Id.Should().Be(existingCategoryId);
+                category.Name.Should().Be("Category Test 2");
             }
         }
 
         public class AddCategory : RepositoryTestsBase
         {
             [Fact]
-            public async void ShouldAddCategoryWithCorrectValues_WhenCategoryIsValid()
+            public async Task ShouldAddCategoryWithCorrectValues_WhenCategoryIsValid()
             {
                 // Arrange
-                Category categoryToAdd = new Category();
+                var categoryToAdd = _fixture.Build<Category>()
+                    .With(c => c.Id, 100)
+                    .Create();
 
                 // Act
                 await using (var context = new BookStoreDbContext(_options))
                 {
                     var repository = new RepositoryConcreteClass(context);
-                    categoryToAdd = CreateCategory();
-
                     await repository.Add(categoryToAdd);
                 }
 
                 // Assert
                 await using (var context = new BookStoreDbContext(_options))
                 {
-                    var categoryResult = await context.Categories.Where(b => b.Id == 4).FirstOrDefaultAsync();
+                    var categoryResult = await context.Categories.Where(b => b.Id == categoryToAdd.Id).FirstOrDefaultAsync();
 
                     categoryResult.Should().NotBeNull();
+                    categoryResult!.Name.Should().Be(categoryToAdd.Name);
                     categoryResult.Should().BeOfType<Category>();
-                    categoryResult.Should().BeEquivalentTo(categoryToAdd);
                 }
             }
         }
@@ -248,14 +220,15 @@ namespace BookStore.Infrastructure.Tests
         public class UpdateCategory : RepositoryTestsBase
         {
             [Fact]
-            public async void ShouldUpdateCategoryWithCorrectValues_WhenCategoryIsValid()
+            public async Task ShouldUpdateCategoryWithCorrectValues_WhenCategoryIsValid()
             {
                 // Arrange
-                Category categoryToUpdate = new Category();
+                var updatedName = _fixture.Create<string>();
+                Category categoryToUpdate;
                 await using (var context = new BookStoreDbContext(_options))
                 {
-                    categoryToUpdate = await context.Categories.Where(b => b.Id == 1).FirstOrDefaultAsync();
-                    categoryToUpdate.Name = "Updated Name";
+                    categoryToUpdate = (await context.Categories.Where(b => b.Id == 1).FirstOrDefaultAsync())!;
+                    categoryToUpdate.Name = updatedName;
                 }
 
                 // Act
@@ -272,7 +245,7 @@ namespace BookStore.Infrastructure.Tests
 
                     updatedCategory.Should().NotBeNull();
                     updatedCategory.Should().BeOfType<Category>();
-                    updatedCategory.Should().BeEquivalentTo(updatedCategory);
+                    updatedCategory!.Name.Should().Be(updatedName);
                 }
             }
         }
@@ -280,41 +253,37 @@ namespace BookStore.Infrastructure.Tests
         public class Remove : RepositoryTestsBase
         {
             [Fact]
-            public async void ShouldRemoveCategory_WhenCategoryIsValid()
+            public async Task ShouldRemoveCategory_WhenCategoryIsValid()
             {
                 // Arrange
-                Category categoryToRemove = new Category();
-
+                var categoryIdToRemove = 2;
+                Category categoryToRemove;
                 await using (var context = new BookStoreDbContext(_options))
                 {
-                    categoryToRemove = await context.Categories.Where(c => c.Id == 2).FirstOrDefaultAsync();
+                    categoryToRemove = (await context.Categories.Where(c => c.Id == categoryIdToRemove).FirstOrDefaultAsync())!;
                 }
 
                 // Act
                 await using (var context = new BookStoreDbContext(_options))
                 {
                     var repository = new RepositoryConcreteClass(context);
-
                     await repository.Remove(categoryToRemove);
                 }
 
                 // Assert
                 await using (var context = new BookStoreDbContext(_options))
                 {
-                    var categoryRemoved = await context.Categories.Where(c => c.Id == 2).FirstOrDefaultAsync();
-
+                    var categoryRemoved = await context.Categories.Where(c => c.Id == categoryIdToRemove).FirstOrDefaultAsync();
                     categoryRemoved.Should().BeNull();
                 }
             }
         }
-
     }
 
     internal class RepositoryConcreteClass : Repository<Category>
     {
         internal RepositoryConcreteClass(BookStoreDbContext bookStoreDbContext) : base(bookStoreDbContext)
         {
-
         }
     }
 }
