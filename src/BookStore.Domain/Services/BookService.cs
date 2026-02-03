@@ -7,10 +7,12 @@ namespace BookStore.Domain.Services
     public class BookService : IBookService
     {
         private readonly IBookRepository _bookRepository;
+        private readonly ICategoryRepository _categoryRepository;
 
-        public BookService(IBookRepository bookRepository)
+        public BookService(IBookRepository bookRepository, ICategoryRepository categoryRepository)
         {
             _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
+            _categoryRepository = categoryRepository ?? throw new ArgumentNullException(nameof(categoryRepository));
         }
 
         public async Task<IEnumerable<Book>> GetAll(CancellationToken ct = default)
@@ -36,6 +38,12 @@ namespace BookStore.Domain.Services
                 if (!validation.Success)
                 {
                     return validation;
+                }
+
+                var categoryExists = await _categoryRepository.ExistsAsync(c => c.Id == book.CategoryId, ct);
+                if (!categoryExists)
+                {
+                    return OperationResult<Book>.NotFound(string.Format(ErrorMessages.CategoryNotFound, book.CategoryId));
                 }
 
                 var bookExists = await _bookRepository.ExistsAsync(b => b.Name == book.Name, ct);
@@ -67,6 +75,12 @@ namespace BookStore.Domain.Services
                 if (existingBook == null)
                 {
                     return OperationResult<Book>.NotFound(string.Format(ErrorMessages.BookNotFound, book.Id));
+                }
+
+                var categoryExists = await _categoryRepository.ExistsAsync(c => c.Id == book.CategoryId, ct);
+                if (!categoryExists)
+                {
+                    return OperationResult<Book>.NotFound(string.Format(ErrorMessages.CategoryNotFound, book.CategoryId));
                 }
 
                 var duplicateExists = await _bookRepository.ExistsAsync(b => b.Name == book.Name && b.Id != book.Id, ct);
@@ -111,16 +125,31 @@ namespace BookStore.Domain.Services
 
         public async Task<IEnumerable<Book>> GetBooksByCategory(int categoryId, CancellationToken ct = default)
         {
+            if (categoryId <= 0)
+            {
+                return [];
+            }
+
             return await _bookRepository.GetBooksByCategory(categoryId, ct);
         }
 
         public async Task<IEnumerable<Book>> Search(string bookName, CancellationToken ct = default)
         {
+            if (string.IsNullOrWhiteSpace(bookName))
+            {
+                return [];
+            }
+
             return await _bookRepository.Search(c => c.Name.Contains(bookName), ct);
         }
 
         public async Task<IEnumerable<Book>> SearchBookWithCategory(string searchedValue, CancellationToken ct = default)
         {
+            if (string.IsNullOrWhiteSpace(searchedValue))
+            {
+                return [];
+            }
+
             return await _bookRepository.SearchBookWithCategory(searchedValue, ct);
         }
 

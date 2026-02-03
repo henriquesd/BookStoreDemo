@@ -347,20 +347,23 @@ namespace BookStore.API.Tests
         }
 
         [Fact]
-        public async Task Search_ShouldReturnNotFound_WhenNoCategoriesFound()
+        public async Task Search_ShouldReturnOkWithEmptyList_WhenNoCategoriesFound()
         {
             _categoryServiceMock.Setup(s => s.Search("NonExistent")).ReturnsAsync(new List<Category>());
 
             var result = await _controller.Search("NonExistent");
 
-            result.Should().BeOfType<NotFoundObjectResult>();
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var dtos = okResult!.Value as IEnumerable<CategoryResultDto>;
+            dtos.Should().BeEmpty();
         }
 
         [Theory]
         [InlineData("")]
         [InlineData(" ")]
         [InlineData(null)]
-        public async Task Search_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string searchTerm)
+        public async Task Search_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string? searchTerm)
         {
             var result = await _controller.Search(searchTerm);
 

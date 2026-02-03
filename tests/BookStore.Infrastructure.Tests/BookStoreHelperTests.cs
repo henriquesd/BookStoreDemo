@@ -22,7 +22,7 @@ namespace BookStore.Infrastructure.Tests
 
             return options;
         }
-   
+
         /// <summary>
         /// Use this to use an EF Core InMemory database
         /// </summary>

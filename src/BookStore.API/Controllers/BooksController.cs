@@ -13,6 +13,7 @@ namespace BookStore.API.Controllers
 
         public BooksController(IBookService bookService)
         {
+            ArgumentNullException.ThrowIfNull(bookService);
             _bookService = bookService;
         }
 
@@ -60,7 +61,6 @@ namespace BookStore.API.Controllers
         [HttpGet]
         [Route("get-books-by-category/{categoryId:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetBooksByCategory(int categoryId, CancellationToken ct = default)
         {
@@ -70,11 +70,6 @@ namespace BookStore.API.Controllers
             }
 
             var books = await _bookService.GetBooksByCategory(categoryId, ct);
-
-            if (!books.Any())
-            {
-                return NotFound(new { message = "No books found for this category" });
-            }
 
             return Ok(books.ToDto());
         }
@@ -128,7 +123,7 @@ namespace BookStore.API.Controllers
         [HttpGet]
         [Route("search/{bookName}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Search(string bookName, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(bookName))
@@ -138,18 +133,13 @@ namespace BookStore.API.Controllers
 
             var books = await _bookService.Search(bookName, ct);
 
-            if (!books.Any())
-            {
-                return NotFound(new { message = "No books were found" });
-            }
-
             return Ok(books.ToDto());
         }
 
         [HttpGet]
         [Route("search-book-with-category/{searchedValue}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> SearchBookWithCategory(string searchedValue, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(searchedValue))
@@ -158,11 +148,6 @@ namespace BookStore.API.Controllers
             }
 
             var books = await _bookService.SearchBookWithCategory(searchedValue, ct);
-
-            if (!books.Any())
-            {
-                return NotFound(new { message = "No books were found" });
-            }
 
             return Ok(books.ToDto());
         }

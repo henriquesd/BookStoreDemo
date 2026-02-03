@@ -355,13 +355,16 @@ namespace BookStore.API.Tests
         }
 
         [Fact]
-        public async Task GetBooksByCategory_ShouldReturnNotFound_WhenNoBooksExist()
+        public async Task GetBooksByCategory_ShouldReturnOkWithEmptyList_WhenNoBooksExist()
         {
             _bookServiceMock.Setup(s => s.GetBooksByCategory(1)).ReturnsAsync(new List<Book>());
 
             var result = await _controller.GetBooksByCategory(1);
 
-            result.Should().BeOfType<NotFoundObjectResult>();
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var dtos = okResult!.Value as IEnumerable<BookResultDto>;
+            dtos.Should().BeEmpty();
         }
 
         [Theory]
@@ -393,20 +396,23 @@ namespace BookStore.API.Tests
         }
 
         [Fact]
-        public async Task Search_ShouldReturnNotFound_WhenNoBooksFound()
+        public async Task Search_ShouldReturnOkWithEmptyList_WhenNoBooksFound()
         {
             _bookServiceMock.Setup(s => s.Search("NonExistent")).ReturnsAsync(new List<Book>());
 
             var result = await _controller.Search("NonExistent");
 
-            result.Should().BeOfType<NotFoundObjectResult>();
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var dtos = okResult!.Value as IEnumerable<BookResultDto>;
+            dtos.Should().BeEmpty();
         }
 
         [Theory]
         [InlineData("")]
         [InlineData(" ")]
         [InlineData(null)]
-        public async Task Search_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string searchTerm)
+        public async Task Search_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string? searchTerm)
         {
             var result = await _controller.Search(searchTerm);
 
@@ -428,20 +434,23 @@ namespace BookStore.API.Tests
         }
 
         [Fact]
-        public async Task SearchBookWithCategory_ShouldReturnNotFound_WhenNoBooksFound()
+        public async Task SearchBookWithCategory_ShouldReturnOkWithEmptyList_WhenNoBooksFound()
         {
             _bookServiceMock.Setup(s => s.SearchBookWithCategory("NonExistent")).ReturnsAsync(new List<Book>());
 
             var result = await _controller.SearchBookWithCategory("NonExistent");
 
-            result.Should().BeOfType<NotFoundObjectResult>();
+            result.Should().BeOfType<OkObjectResult>();
+            var okResult = result as OkObjectResult;
+            var dtos = okResult!.Value as IEnumerable<BookResultDto>;
+            dtos.Should().BeEmpty();
         }
 
         [Theory]
         [InlineData("")]
         [InlineData(" ")]
         [InlineData(null)]
-        public async Task SearchBookWithCategory_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string searchTerm)
+        public async Task SearchBookWithCategory_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string? searchTerm)
         {
             var result = await _controller.SearchBookWithCategory(searchTerm);
 

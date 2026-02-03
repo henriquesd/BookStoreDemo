@@ -13,6 +13,7 @@ namespace BookStore.API.Controllers
 
         public CategoriesController(ICategoryService categoryService)
         {
+            ArgumentNullException.ThrowIfNull(categoryService);
             _categoryService = categoryService;
         }
 
@@ -110,7 +111,6 @@ namespace BookStore.API.Controllers
         [HttpGet]
         [Route("search/{category}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Search(string category, CancellationToken ct = default)
         {
@@ -120,11 +120,6 @@ namespace BookStore.API.Controllers
             }
 
             var categories = await _categoryService.Search(category, ct);
-
-            if (!categories.Any())
-            {
-                return NotFound(new { message = "No categories were found" });
-            }
 
             return Ok(categories.ToDto());
         }

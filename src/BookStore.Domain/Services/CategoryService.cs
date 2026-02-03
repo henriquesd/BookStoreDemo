@@ -121,6 +121,11 @@ namespace BookStore.Domain.Services
 
         public async Task<IEnumerable<Category>> Search(string categoryName, CancellationToken ct = default)
         {
+            if (string.IsNullOrWhiteSpace(categoryName))
+            {
+                return [];
+            }
+
             return await _categoryRepository.Search(c => c.Name.Contains(categoryName), ct);
         }
 
