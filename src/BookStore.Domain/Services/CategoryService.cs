@@ -198,19 +198,7 @@ namespace BookStore.Domain.Services
         private static OperationResult<bool> ValidateId(int id) =>
             ValidationHelper.ValidateIdForRemoval(id, "category");
 
-        private static OperationResult<PagedResponse<Category>> ValidatePagination(int pageNumber, int pageSize)
-        {
-            if (pageNumber <= 0)
-            {
-                return OperationResult<PagedResponse<Category>>.ValidationError("Page number must be greater than zero");
-            }
-
-            if (pageSize <= 0 || pageSize > 100)
-            {
-                return OperationResult<PagedResponse<Category>>.ValidationError("Page size must be between 1 and 100");
-            }
-
-            return new OperationResult<PagedResponse<Category>>(true, null);
-        }
+        private static OperationResult<PagedResponse<Category>> ValidatePagination(int pageNumber, int pageSize) =>
+            ValidationHelper.ValidatePagination<Category>(pageNumber, pageSize);
     }
 }

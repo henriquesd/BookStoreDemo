@@ -44,5 +44,20 @@ namespace BookStore.Domain.Services
 
             return new OperationResult<bool>(true, null);
         }
+
+        public static OperationResult<PagedResponse<T>> ValidatePagination<T>(int pageNumber, int pageSize) where T : class
+        {
+            if (pageNumber <= 0)
+            {
+                return OperationResult<PagedResponse<T>>.ValidationError("Page number must be greater than zero");
+            }
+
+            if (pageSize <= 0 || pageSize > 100)
+            {
+                return OperationResult<PagedResponse<T>>.ValidationError("Page size must be between 1 and 100");
+            }
+
+            return new OperationResult<PagedResponse<T>>(true, null);
+        }
     }
 }

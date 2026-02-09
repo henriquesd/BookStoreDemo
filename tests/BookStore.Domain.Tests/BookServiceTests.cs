@@ -115,6 +115,64 @@ namespace BookStore.Domain.Tests
             await _bookRepositoryMock.Received(1).GetAllWithPagination(pageNumber, pageSize, Arg.Any<CancellationToken>());
         }
 
+        [Theory]
+        [InlineData(0, 10)]
+        [InlineData(-1, 10)]
+        [InlineData(-100, 10)]
+        public async Task GetAllWithPagination_Should_ReturnValidationError_When_PageNumberIsInvalid(int pageNumber, int pageSize)
+        {
+            // Arrange & Act
+            var result = await _service.GetAllWithPagination(pageNumber, pageSize);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Success.Should().BeFalse();
+            result.ErrorCode.Should().Be(OperationErrorCode.ValidationError);
+            result.Message.Should().Contain("Page number");
+        }
+
+        [Theory]
+        [InlineData(1, 0)]
+        [InlineData(1, -1)]
+        [InlineData(1, -10)]
+        public async Task GetAllWithPagination_Should_ReturnValidationError_When_PageSizeIsTooSmall(int pageNumber, int pageSize)
+        {
+            // Arrange & Act
+            var result = await _service.GetAllWithPagination(pageNumber, pageSize);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Success.Should().BeFalse();
+            result.ErrorCode.Should().Be(OperationErrorCode.ValidationError);
+            result.Message.Should().Contain("Page size");
+        }
+
+        [Theory]
+        [InlineData(1, 101)]
+        [InlineData(1, 200)]
+        [InlineData(1, 1000)]
+        public async Task GetAllWithPagination_Should_ReturnValidationError_When_PageSizeIsTooLarge(int pageNumber, int pageSize)
+        {
+            // Arrange & Act
+            var result = await _service.GetAllWithPagination(pageNumber, pageSize);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Success.Should().BeFalse();
+            result.ErrorCode.Should().Be(OperationErrorCode.ValidationError);
+            result.Message.Should().Contain("Page size");
+        }
+
+        [Fact]
+        public async Task GetAllWithPagination_Should_NotCallRepository_When_ValidationFails()
+        {
+            // Arrange & Act
+            await _service.GetAllWithPagination(0, 10);
+
+            // Assert
+            await _bookRepositoryMock.DidNotReceive().GetAllWithPagination(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        }
+
         [Fact]
         public async Task GetById_Should_ReturnBook_When_BookExists()
         {
