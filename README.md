@@ -222,31 +222,6 @@ BookStoreDemo/
 └── README.md                       # This file
 ```
 
-## Recent Updates
-
-### v2.0 - API Modernization (Latest)
-- ✅ Implemented Result pattern across all service methods
-- ✅ Standardized API routes to kebab-case
-- ✅ Migrated search endpoints to use query parameters
-- ✅ Added automatic pagination validation with `[Range]` attributes
-- ✅ Implemented standardized `ErrorResponse` DTO
-- ✅ Refactored controllers to use primary constructors (C# 12)
-- ✅ Added `GlobalUsings.cs` for cleaner code
-- ✅ Updated all 240 unit tests to match new patterns
-- ✅ Enhanced error handling and validation
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is for educational purposes.
-
 ## Contact
 
 Henrique - [@henriquesd](https://github.com/henriquesd)
