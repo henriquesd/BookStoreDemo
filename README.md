@@ -47,10 +47,7 @@ src/
 - **Result Pattern**: All service methods return `IOperationResult<T>` for consistent success/error handling
 - **Repository Pattern**: Generic `IRepository<T>` with specialized implementations
 - **Manual Mapping**: Extension methods for Model-DTO conversions
-- **Primary Constructors**: Modern C# 12 syntax for cleaner code
-- **Global Using Directives**: Reduced boilerplate with `GlobalUsings.cs`
 - **Standardized Error Responses**: `ErrorResponse` DTO for consistent API errors
-- **Model Validation**: ASP.NET Core `[Range]` attributes for automatic parameter validation
 
 ## API Endpoints
 
