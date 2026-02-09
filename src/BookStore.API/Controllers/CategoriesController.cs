@@ -94,7 +94,14 @@ namespace BookStore.API.Controllers
             var category = categoryDto.ToModel();
             var categoryResult = await _categoryService.Update(category, ct);
 
-            return categoryResult.ToActionResult(c => c.ToDto());
+            if (!categoryResult.Success)
+            {
+                return categoryResult.ToActionResult();
+            }
+
+            var categoryResultDto = categoryResult.Payload!.ToDto();
+
+            return Ok(categoryResultDto);
         }
 
         [HttpDelete("{id:int}")]
@@ -120,8 +127,9 @@ namespace BookStore.API.Controllers
             }
 
             var categories = await _categoryService.Search(category, ct);
+            var categoriesResultDto = categories.ToDto();
 
-            return Ok(categories.ToDto());
+            return Ok(categoriesResultDto);
         }
     }
 }

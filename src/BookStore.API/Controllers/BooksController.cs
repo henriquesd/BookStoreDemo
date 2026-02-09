@@ -22,8 +22,9 @@ namespace BookStore.API.Controllers
         public async Task<IActionResult> GetAll(CancellationToken ct = default)
         {
             var books = await _bookService.GetAll(ct);
+            var booksResultDto = books.ToDto();
 
-            return Ok(books.ToDto());
+            return Ok(booksResultDto);
         }
 
         [HttpGet("GetAllWithPagination")]
@@ -55,7 +56,9 @@ namespace BookStore.API.Controllers
                 return NotFound(new { message = "Book not found" });
             }
 
-            return Ok(book.ToDto());
+            var bookResultDto = book.ToDto();
+
+            return Ok(bookResultDto);
         }
 
         [HttpGet]
@@ -70,8 +73,9 @@ namespace BookStore.API.Controllers
             }
 
             var books = await _bookService.GetBooksByCategory(categoryId, ct);
+            var booksResultDto = books.ToDto();
 
-            return Ok(books.ToDto());
+            return Ok(booksResultDto);
         }
 
         [HttpPost]
@@ -106,7 +110,14 @@ namespace BookStore.API.Controllers
             var book = bookDto.ToModel();
             var bookResult = await _bookService.Update(book, ct);
 
-            return bookResult.ToActionResult(b => b.ToDto());
+            if (!bookResult.Success)
+            {
+                return bookResult.ToActionResult();
+            }
+
+            var bookResultDto = bookResult.Payload!.ToDto();
+
+            return Ok(bookResultDto);
         }
 
         [HttpDelete("{id:int}")]
@@ -132,8 +143,9 @@ namespace BookStore.API.Controllers
             }
 
             var books = await _bookService.Search(bookName, ct);
+            var booksResultDto = books.ToDto();
 
-            return Ok(books.ToDto());
+            return Ok(booksResultDto);
         }
 
         [HttpGet]
@@ -148,8 +160,9 @@ namespace BookStore.API.Controllers
             }
 
             var books = await _bookService.SearchBookWithCategory(searchedValue, ct);
+            var booksResultDto = books.ToDto();
 
-            return Ok(books.ToDto());
+            return Ok(booksResultDto);
         }
     }
 }
