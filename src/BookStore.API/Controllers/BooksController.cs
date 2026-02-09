@@ -1,80 +1,74 @@
-using BookStore.API.Dtos.Book;
-using BookStore.API.Mappings;
-using BookStore.Domain.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-
 namespace BookStore.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class BooksController : ControllerBase
+    public class BooksController(IBookService bookService) : ControllerBase
     {
-        private readonly IBookService _bookService;
-
-        public BooksController(IBookService bookService)
-        {
-            ArgumentNullException.ThrowIfNull(bookService);
-            _bookService = bookService;
-        }
-
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAll(CancellationToken ct = default)
         {
-            var books = await _bookService.GetAll(ct);
-            var booksResultDto = books.ToDto();
+            var result = await bookService.GetAll(ct);
 
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
+
+            var booksResultDto = result.Payload!.ToDto();
             return Ok(booksResultDto);
         }
 
-        [HttpGet("GetAllWithPagination")]
+        [HttpGet("pagination")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
+        public async Task<IActionResult> GetAllWithPagination(
+            [Range(1, int.MaxValue)] int pageNumber = 1, 
+            [Range(1, 100)] int pageSize = 10, 
+            CancellationToken ct = default)
         {
-            if (pageNumber <= 0 || pageSize <= 0)
+            var result = await bookService.GetAllWithPagination(pageNumber, pageSize, ct);
+
+            if (!result.Success)
             {
-                return BadRequest(new { message = "Page number and page size must be greater than zero" });
+                return result.ToActionResult();
             }
 
-            var paginatedBooks = await _bookService.GetAllWithPagination(pageNumber, pageSize, ct);
-
-            var booksResultDto = paginatedBooks.ToDto(b => b.ToDto());
-
+            var booksResultDto = result.Payload!.ToDto(b => b.ToDto());
             return Ok(booksResultDto);
         }
 
         [HttpGet("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetById(int id, CancellationToken ct = default)
         {
-            var book = await _bookService.GetById(id, ct);
+            var result = await bookService.GetById(id, ct);
 
-            if (book == null)
+            if (!result.Success)
             {
-                return NotFound(new { message = "Book not found" });
+                return result.ToActionResult();
             }
 
-            var bookResultDto = book.ToDto();
-
+            var bookResultDto = result.Payload!.ToDto();
             return Ok(bookResultDto);
         }
 
-        [HttpGet]
-        [Route("get-books-by-category/{categoryId:int}")]
+        [HttpGet("categories/{categoryId:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetBooksByCategory(int categoryId, CancellationToken ct = default)
         {
-            if (categoryId <= 0)
+            var result = await bookService.GetBooksByCategory(categoryId, ct);
+
+            if (!result.Success)
             {
-                return BadRequest(new { message = "Invalid category ID" });
+                return result.ToActionResult();
             }
 
-            var books = await _bookService.GetBooksByCategory(categoryId, ct);
-            var booksResultDto = books.ToDto();
-
+            var booksResultDto = result.Payload!.ToDto();
             return Ok(booksResultDto);
         }
 
@@ -84,15 +78,14 @@ namespace BookStore.API.Controllers
         public async Task<IActionResult> Add(BookAddDto bookDto, CancellationToken ct = default)
         {
             var book = bookDto.ToModel();
-            var bookResult = await _bookService.Add(book, ct);
+            var bookResult = await bookService.Add(book, ct);
 
             if (!bookResult.Success)
             {
-                return BadRequest(new { message = bookResult.Message });
+                return bookResult.ToActionResult();
             }
 
             var bookResultDto = bookResult.Payload!.ToDto();
-
             return CreatedAtAction(nameof(GetById), new { id = bookResultDto.Id }, bookResultDto);
         }
 
@@ -104,11 +97,11 @@ namespace BookStore.API.Controllers
         {
             if (id != bookDto.Id)
             {
-                return BadRequest(new { message = "ID mismatch" });
+                return BadRequest(new ErrorResponse("ID mismatch"));
             }
 
             var book = bookDto.ToModel();
-            var bookResult = await _bookService.Update(book, ct);
+            var bookResult = await bookService.Update(book, ct);
 
             if (!bookResult.Success)
             {
@@ -116,7 +109,6 @@ namespace BookStore.API.Controllers
             }
 
             var bookResultDto = bookResult.Payload!.ToDto();
-
             return Ok(bookResultDto);
         }
 
@@ -126,42 +118,39 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Remove(int id, CancellationToken ct = default)
         {
-            var result = await _bookService.Remove(id, ct);
-
+            var result = await bookService.Remove(id, ct);
             return result.ToActionResult();
         }
 
-        [HttpGet]
-        [Route("search/{bookName}")]
+        [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Search(string bookName, CancellationToken ct = default)
+        public async Task<IActionResult> Search([FromQuery] string q, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(bookName))
+            var result = await bookService.Search(q, ct);
+
+            if (!result.Success)
             {
-                return BadRequest(new { message = "Search term is required" });
+                return result.ToActionResult();
             }
 
-            var books = await _bookService.Search(bookName, ct);
-            var booksResultDto = books.ToDto();
-
+            var booksResultDto = result.Payload!.ToDto();
             return Ok(booksResultDto);
         }
 
-        [HttpGet]
-        [Route("search-book-with-category/{searchedValue}")]
+        [HttpGet("search-with-category")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> SearchBookWithCategory(string searchedValue, CancellationToken ct = default)
+        public async Task<IActionResult> SearchBookWithCategory([FromQuery] string q, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(searchedValue))
+            var result = await bookService.SearchBookWithCategory(q, ct);
+
+            if (!result.Success)
             {
-                return BadRequest(new { message = "Search term is required" });
+                return result.ToActionResult();
             }
 
-            var books = await _bookService.SearchBookWithCategory(searchedValue, ct);
-            var booksResultDto = books.ToDto();
-
+            var booksResultDto = result.Payload!.ToDto();
             return Ok(booksResultDto);
         }
     }

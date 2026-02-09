@@ -15,19 +15,60 @@ namespace BookStore.Domain.Services
             _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
         }
 
-        public async Task<IEnumerable<Category>> GetAll(CancellationToken ct = default)
+        public async Task<IOperationResult<IEnumerable<Category>>> GetAll(CancellationToken ct = default)
         {
-            return await _categoryRepository.GetAll(ct);
+            try
+            {
+                var categories = await _categoryRepository.GetAll(ct);
+                return OperationResult<IEnumerable<Category>>.Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                return OperationResult<IEnumerable<Category>>.Error($"An error occurred while retrieving categories: {ex.Message}");
+            }
         }
 
-        public async Task<PagedResponse<Category>> GetAllWithPagination(int pageNumber, int pageSize, CancellationToken ct = default)
+        public async Task<IOperationResult<PagedResponse<Category>>> GetAllWithPagination(int pageNumber, int pageSize, CancellationToken ct = default)
         {
-            return await _categoryRepository.GetAllWithPagination(pageNumber, pageSize, ct);
+            try
+            {
+                var validation = ValidatePagination(pageNumber, pageSize);
+                if (!validation.Success)
+                {
+                    return validation;
+                }
+
+                var paginatedCategories = await _categoryRepository.GetAllWithPagination(pageNumber, pageSize, ct);
+                return OperationResult<PagedResponse<Category>>.Ok(paginatedCategories);
+            }
+            catch (Exception ex)
+            {
+                return OperationResult<PagedResponse<Category>>.Error($"An error occurred while retrieving paginated categories: {ex.Message}");
+            }
         }
 
-        public async Task<Category?> GetById(int id, CancellationToken ct = default)
+        public async Task<IOperationResult<Category>> GetById(int id, CancellationToken ct = default)
         {
-            return await _categoryRepository.GetById(id, ct);
+            try
+            {
+                var validation = ValidationHelper.ValidateId<Category>(id, "category");
+                if (!validation.Success)
+                {
+                    return validation;
+                }
+
+                var category = await _categoryRepository.GetById(id, ct);
+                if (category == null)
+                {
+                    return OperationResult<Category>.NotFound(string.Format(ErrorMessages.CategoryNotFound, id));
+                }
+
+                return OperationResult<Category>.Ok(category);
+            }
+            catch (Exception ex)
+            {
+                return OperationResult<Category>.Error($"An error occurred while retrieving category: {ex.Message}");
+            }
         }
 
         public async Task<IOperationResult<Category>> Add(Category category, CancellationToken ct = default)
@@ -119,14 +160,23 @@ namespace BookStore.Domain.Services
             }
         }
 
-        public async Task<IEnumerable<Category>> Search(string categoryName, CancellationToken ct = default)
+        public async Task<IOperationResult<IEnumerable<Category>>> Search(string categoryName, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(categoryName))
+            try
             {
-                return [];
-            }
+                var validation = ValidationHelper.ValidateRequiredString<Category>(categoryName, "Search term");
+                if (!validation.Success)
+                {
+                    return OperationResult<IEnumerable<Category>>.ValidationError(validation.Message!);
+                }
 
-            return await _categoryRepository.Search(c => c.Name.Contains(categoryName), ct);
+                var categories = await _categoryRepository.Search(c => c.Name.Contains(categoryName), ct);
+                return OperationResult<IEnumerable<Category>>.Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                return OperationResult<IEnumerable<Category>>.Error($"An error occurred while searching categories: {ex.Message}");
+            }
         }
 
         private static OperationResult<Category> ValidateCategory(Category? category)
@@ -147,5 +197,20 @@ namespace BookStore.Domain.Services
 
         private static OperationResult<bool> ValidateId(int id) =>
             ValidationHelper.ValidateIdForRemoval(id, "category");
+
+        private static OperationResult<PagedResponse<Category>> ValidatePagination(int pageNumber, int pageSize)
+        {
+            if (pageNumber <= 0)
+            {
+                return OperationResult<PagedResponse<Category>>.ValidationError("Page number must be greater than zero");
+            }
+
+            if (pageSize <= 0 || pageSize > 100)
+            {
+                return OperationResult<PagedResponse<Category>>.ValidationError("Page size must be between 1 and 100");
+            }
+
+            return new OperationResult<PagedResponse<Category>>(true, null);
+        }
     }
 }

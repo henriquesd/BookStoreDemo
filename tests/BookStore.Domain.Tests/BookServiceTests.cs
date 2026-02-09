@@ -60,7 +60,9 @@ namespace BookStore.Domain.Tests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(3);
+            result.Success.Should().BeTrue();
+            result.Payload.Should().NotBeNull();
+            result.Payload.Should().HaveCount(3);
         }
 
         [Fact]
@@ -91,9 +93,10 @@ namespace BookStore.Domain.Tests
 
             // Assert
             result.Should().NotBeNull();
-            result.Data.Should().HaveCount(5);
-            result.PageNumber.Should().Be(pageNumber);
-            result.PageSize.Should().Be(pageSize);
+            result.Success.Should().BeTrue();
+            result.Payload.Data.Should().HaveCount(5);
+            result.Payload.PageNumber.Should().Be(pageNumber);
+            result.Payload.PageSize.Should().Be(pageSize);
         }
 
         [Fact]
@@ -124,11 +127,13 @@ namespace BookStore.Domain.Tests
 
             // Assert
             result.Should().NotBeNull();
-            result!.Id.Should().Be(book.Id);
+            result.Success.Should().BeTrue();
+            result.Payload.Should().NotBeNull();
+            result.Payload!.Id.Should().Be(book.Id);
         }
 
         [Fact]
-        public async Task GetById_Should_ReturnNull_When_BookDoesNotExist()
+        public async Task GetById_Should_ReturnNotFound_When_BookDoesNotExist()
         {
             // Arrange
             var bookId = _fixture.Create<int>();
@@ -138,7 +143,9 @@ namespace BookStore.Domain.Tests
             var result = await _service.GetById(bookId);
 
             // Assert
-            result.Should().BeNull();
+            result.Should().NotBeNull();
+            result.Success.Should().BeFalse();
+            result.ErrorCode.Should().Be(OperationErrorCode.NotFound);
         }
 
         [Fact]
@@ -172,22 +179,25 @@ namespace BookStore.Domain.Tests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(3);
-            result.All(b => b.CategoryId == categoryId).Should().BeTrue();
+            result.Success.Should().BeTrue();
+            result.Payload.Should().NotBeNull();
+            result.Payload.Should().HaveCount(3);
+            result.Payload.All(b => b.CategoryId == categoryId).Should().BeTrue();
         }
 
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
         [InlineData(-100)]
-        public async Task GetBooksByCategory_Should_ReturnEmptyList_When_CategoryIdIsInvalid(int invalidCategoryId)
+        public async Task GetBooksByCategory_Should_ReturnValidationError_When_CategoryIdIsInvalid(int invalidCategoryId)
         {
             // Arrange & Act
             var result = await _service.GetBooksByCategory(invalidCategoryId);
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().BeEmpty();
+            result.Success.Should().BeFalse();
+            result.ErrorCode.Should().Be(OperationErrorCode.ValidationError);
         }
 
         [Fact]
@@ -231,31 +241,35 @@ namespace BookStore.Domain.Tests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(2);
+            result.Success.Should().BeTrue();
+            result.Payload.Should().NotBeNull();
+            result.Payload.Should().HaveCount(2);
         }
 
         [Fact]
-        public async Task Search_Should_ReturnEmptyList_When_SearchTermIsNull()
+        public async Task Search_Should_ReturnValidationError_When_SearchTermIsNull()
         {
             // Arrange & Act
             var result = await _service.Search(null!);
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().BeEmpty();
+            result.Success.Should().BeFalse();
+            result.ErrorCode.Should().Be(OperationErrorCode.ValidationError);
         }
 
         [Theory]
         [InlineData("")]
         [InlineData("   ")]
-        public async Task Search_Should_ReturnEmptyList_When_SearchTermIsWhitespace(string searchTerm)
+        public async Task Search_Should_ReturnValidationError_When_SearchTermIsWhitespace(string searchTerm)
         {
             // Arrange & Act
             var result = await _service.Search(searchTerm);
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().BeEmpty();
+            result.Success.Should().BeFalse();
+            result.ErrorCode.Should().Be(OperationErrorCode.ValidationError);
         }
 
         [Fact]
@@ -296,31 +310,35 @@ namespace BookStore.Domain.Tests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(3);
+            result.Success.Should().BeTrue();
+            result.Payload.Should().NotBeNull();
+            result.Payload.Should().HaveCount(3);
         }
 
         [Fact]
-        public async Task SearchBookWithCategory_Should_ReturnEmptyList_When_SearchTermIsNull()
+        public async Task SearchBookWithCategory_Should_ReturnValidationError_When_SearchTermIsNull()
         {
             // Arrange & Act
             var result = await _service.SearchBookWithCategory(null!);
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().BeEmpty();
+            result.Success.Should().BeFalse();
+            result.ErrorCode.Should().Be(OperationErrorCode.ValidationError);
         }
 
         [Theory]
         [InlineData("")]
         [InlineData("   ")]
-        public async Task SearchBookWithCategory_Should_ReturnEmptyList_When_SearchTermIsWhitespace(string searchTerm)
+        public async Task SearchBookWithCategory_Should_ReturnValidationError_When_SearchTermIsWhitespace(string searchTerm)
         {
             // Arrange & Act
             var result = await _service.SearchBookWithCategory(searchTerm);
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().BeEmpty();
+            result.Success.Should().BeFalse();
+            result.ErrorCode.Should().Be(OperationErrorCode.ValidationError);
         }
 
         [Fact]

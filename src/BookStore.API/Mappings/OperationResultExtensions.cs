@@ -1,5 +1,4 @@
-using BookStore.Domain.Interfaces;
-using Microsoft.AspNetCore.Mvc;
+using BookStore.API.Dtos;
 
 namespace BookStore.API.Mappings
 {
@@ -38,7 +37,7 @@ namespace BookStore.API.Mappings
 
         private static IActionResult ToErrorResult(IOperationResult result)
         {
-            var errorResponse = new { message = result.Message };
+            var errorResponse = new ErrorResponse(result.Message ?? "An error occurred");
 
             return result.ErrorCode switch
             {

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace BookStore.API.Dtos.Category
+﻿namespace BookStore.API.Dtos.Category
 {
     public class CategoryEditDto
     {

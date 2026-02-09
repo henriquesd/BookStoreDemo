@@ -1,7 +1,3 @@
-using BookStore.API.Dtos.Book;
-using BookStore.Domain.Interfaces;
-using BookStore.Domain.Models;
-
 namespace BookStore.API.Mappings
 {
     public static class BookMappingExtensions

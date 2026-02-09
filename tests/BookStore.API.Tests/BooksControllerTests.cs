@@ -31,7 +31,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var books = _fixture.CreateMany<Book>(3).ToList();
-            _bookServiceMock.GetAll().Returns(books);
+            _bookServiceMock.GetAll().Returns(OperationResult<IEnumerable<Book>>.Ok(books));
 
             // Act
             var result = await _controller.GetAll();
@@ -47,7 +47,7 @@ namespace BookStore.API.Tests
         public async Task GetAll_ShouldReturnOkWithEmptyList_WhenNoBooksExist()
         {
             // Arrange
-            _bookServiceMock.GetAll().Returns(new List<Book>());
+            _bookServiceMock.GetAll().Returns(OperationResult<IEnumerable<Book>>.Ok(new List<Book>()));
 
             // Act
             var result = await _controller.GetAll();
@@ -63,7 +63,7 @@ namespace BookStore.API.Tests
         public async Task GetAll_ShouldCallServiceOnce_WhenCalled()
         {
             // Arrange
-            _bookServiceMock.GetAll().Returns(new List<Book>());
+            _bookServiceMock.GetAll().Returns(OperationResult<IEnumerable<Book>>.Ok(new List<Book>()));
 
             // Act
             await _controller.GetAll();
@@ -80,7 +80,7 @@ namespace BookStore.API.Tests
             var pageSize = _fixture.Create<int>() % 50 + 1;
             var books = _fixture.CreateMany<Book>(5).ToList();
             var pagedResponse = new PagedResponse<Book>(books, pageNumber, pageSize, books.Count);
-            _bookServiceMock.GetAllWithPagination(pageNumber, pageSize).Returns(pagedResponse);
+            _bookServiceMock.GetAllWithPagination(pageNumber, pageSize).Returns(OperationResult<PagedResponse<Book>>.Ok(pagedResponse));
 
             // Act
             var result = await _controller.GetAllWithPagination(pageNumber, pageSize);
@@ -99,7 +99,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var pagedResponse = new PagedResponse<Book>(new List<Book>(), 1, 10, 0);
-            _bookServiceMock.GetAllWithPagination(1, 10).Returns(pagedResponse);
+            _bookServiceMock.GetAllWithPagination(1, 10).Returns(OperationResult<PagedResponse<Book>>.Ok(pagedResponse));
 
             // Act
             var result = await _controller.GetAllWithPagination();
@@ -115,9 +115,12 @@ namespace BookStore.API.Tests
         [InlineData(1, -1)]
         [InlineData(0, 0)]
         [InlineData(-5, -5)]
+        [InlineData(1, 101)] // pageSize > 100
         public async Task GetAllWithPagination_ShouldReturnBadRequest_WhenParametersAreInvalid(int pageNumber, int pageSize)
         {
-            // Arrange - no arrangement needed for invalid parameters
+            // Arrange
+            var validationError = OperationResult<PagedResponse<Book>>.ValidationError("Page number and page size must be valid");
+            _bookServiceMock.GetAllWithPagination(pageNumber, pageSize).Returns(validationError);
 
             // Act
             var result = await _controller.GetAllWithPagination(pageNumber, pageSize);
@@ -133,7 +136,7 @@ namespace BookStore.API.Tests
             var pageNumber = _fixture.Create<int>() % 10 + 1;
             var pageSize = _fixture.Create<int>() % 50 + 1;
             var pagedResponse = new PagedResponse<Book>(new List<Book>(), pageNumber, pageSize, 0);
-            _bookServiceMock.GetAllWithPagination(Arg.Any<int>(), Arg.Any<int>()).Returns(pagedResponse);
+            _bookServiceMock.GetAllWithPagination(Arg.Any<int>(), Arg.Any<int>()).Returns(OperationResult<PagedResponse<Book>>.Ok(pagedResponse));
 
             // Act
             await _controller.GetAllWithPagination(pageNumber, pageSize);
@@ -147,7 +150,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var book = _fixture.Create<Book>();
-            _bookServiceMock.GetById(book.Id).Returns(book);
+            _bookServiceMock.GetById(book.Id).Returns(OperationResult<Book>.Ok(book));
 
             // Act
             var result = await _controller.GetById(book.Id);
@@ -166,7 +169,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var bookId = _fixture.Create<int>();
-            _bookServiceMock.GetById(Arg.Any<int>()).Returns((Book?)null);
+            _bookServiceMock.GetById(Arg.Any<int>()).Returns(OperationResult<Book>.NotFound($"Book with ID {bookId} not found"));
 
             // Act
             var result = await _controller.GetById(bookId);
@@ -180,7 +183,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var book = _fixture.Create<Book>();
-            _bookServiceMock.GetById(book.Id).Returns(book);
+            _bookServiceMock.GetById(book.Id).Returns(OperationResult<Book>.Ok(book));
 
             // Act
             await _controller.GetById(book.Id);
@@ -376,7 +379,7 @@ namespace BookStore.API.Tests
                 .With(b => b.CategoryId, categoryId)
                 .CreateMany(3)
                 .ToList();
-            _bookServiceMock.GetBooksByCategory(categoryId).Returns(books);
+            _bookServiceMock.GetBooksByCategory(categoryId).Returns(OperationResult<IEnumerable<Book>>.Ok(books));
 
             // Act
             var result = await _controller.GetBooksByCategory(categoryId);
@@ -393,7 +396,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var categoryId = _fixture.Create<int>();
-            _bookServiceMock.GetBooksByCategory(categoryId).Returns(new List<Book>());
+            _bookServiceMock.GetBooksByCategory(categoryId).Returns(OperationResult<IEnumerable<Book>>.Ok(new List<Book>()));
 
             // Act
             var result = await _controller.GetBooksByCategory(categoryId);
@@ -411,7 +414,9 @@ namespace BookStore.API.Tests
         [InlineData(-999)]
         public async Task GetBooksByCategory_ShouldReturnBadRequest_WhenCategoryIdIsInvalid(int categoryId)
         {
-            // Arrange - no arrangement needed for invalid parameters
+            // Arrange
+            var validationError = OperationResult<IEnumerable<Book>>.ValidationError("Invalid category ID");
+            _bookServiceMock.GetBooksByCategory(categoryId).Returns(validationError);
 
             // Act
             var result = await _controller.GetBooksByCategory(categoryId);
@@ -426,7 +431,7 @@ namespace BookStore.API.Tests
             // Arrange
             var searchTerm = _fixture.Create<string>();
             var books = _fixture.CreateMany<Book>(2).ToList();
-            _bookServiceMock.Search(searchTerm).Returns(books);
+            _bookServiceMock.Search(searchTerm).Returns(OperationResult<IEnumerable<Book>>.Ok(books));
 
             // Act
             var result = await _controller.Search(searchTerm);
@@ -443,7 +448,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var searchTerm = _fixture.Create<string>();
-            _bookServiceMock.Search(searchTerm).Returns(new List<Book>());
+            _bookServiceMock.Search(searchTerm).Returns(OperationResult<IEnumerable<Book>>.Ok(new List<Book>()));
 
             // Act
             var result = await _controller.Search(searchTerm);
@@ -461,7 +466,9 @@ namespace BookStore.API.Tests
         [InlineData(null)]
         public async Task Search_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string? searchTerm)
         {
-            // Arrange - no arrangement needed for invalid parameters
+            // Arrange
+            var validationError = OperationResult<IEnumerable<Book>>.ValidationError("Search term is required");
+            _bookServiceMock.Search(searchTerm!).Returns(validationError);
 
             // Act
             var result = await _controller.Search(searchTerm);
@@ -476,7 +483,7 @@ namespace BookStore.API.Tests
             // Arrange
             var searchTerm = _fixture.Create<string>();
             var books = _fixture.CreateMany<Book>(2).ToList();
-            _bookServiceMock.SearchBookWithCategory(searchTerm).Returns(books);
+            _bookServiceMock.SearchBookWithCategory(searchTerm).Returns(OperationResult<IEnumerable<Book>>.Ok(books));
 
             // Act
             var result = await _controller.SearchBookWithCategory(searchTerm);
@@ -493,7 +500,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var searchTerm = _fixture.Create<string>();
-            _bookServiceMock.SearchBookWithCategory(searchTerm).Returns(new List<Book>());
+            _bookServiceMock.SearchBookWithCategory(searchTerm).Returns(OperationResult<IEnumerable<Book>>.Ok(new List<Book>()));
 
             // Act
             var result = await _controller.SearchBookWithCategory(searchTerm);
@@ -511,7 +518,9 @@ namespace BookStore.API.Tests
         [InlineData(null)]
         public async Task SearchBookWithCategory_ShouldReturnBadRequest_WhenSearchTermIsEmpty(string? searchTerm)
         {
-            // Arrange - no arrangement needed for invalid parameters
+            // Arrange
+            var validationError = OperationResult<IEnumerable<Book>>.ValidationError("Search term is required");
+            _bookServiceMock.SearchBookWithCategory(searchTerm!).Returns(validationError);
 
             // Act
             var result = await _controller.SearchBookWithCategory(searchTerm);

@@ -1,6 +1,6 @@
 # BookStore API
 
-A RESTful Web API for managing a bookstore, built with .NET 10 following Clean Architecture principles.
+A RESTful Web API for managing a bookstore, built with .NET 10 following Clean Architecture principles and modern best practices.
 
 ## Technologies
 
@@ -26,7 +26,8 @@ src/
 ├── BookStore.Domain/          # Domain Layer - Business Logic
 │   ├── Models/                # Entities (Book, Category, OperationResult)
 │   ├── Interfaces/            # Repository and Service contracts
-│   └── Services/              # Business logic implementation
+│   ├── Services/              # Business logic implementation
+│   └── Constants/             # Error messages and constants
 │
 ├── BookStore.Infrastructure/  # Infrastructure Layer - Data Access
 │   ├── Context/               # EF Core DbContext
@@ -37,14 +38,19 @@ src/
     ├── Controllers/           # RESTful controllers
     ├── Dtos/                  # Request/Response DTOs
     ├── Mappings/              # Model-DTO extension methods
+    ├── Middleware/            # Global exception handling
     └── Configuration/         # DI and Swagger setup
 ```
 
-### Key Patterns
+### Key Patterns & Features
 
-- **Result Pattern**: Services return `IOperationResult<T>` for consistent success/error handling
+- **Result Pattern**: All service methods return `IOperationResult<T>` for consistent success/error handling
 - **Repository Pattern**: Generic `IRepository<T>` with specialized implementations
 - **Manual Mapping**: Extension methods for Model-DTO conversions
+- **Primary Constructors**: Modern C# 12 syntax for cleaner code
+- **Global Using Directives**: Reduced boilerplate with `GlobalUsings.cs`
+- **Standardized Error Responses**: `ErrorResponse` DTO for consistent API errors
+- **Model Validation**: ASP.NET Core `[Range]` attributes for automatic parameter validation
 
 ## API Endpoints
 
@@ -53,11 +59,11 @@ src/
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/books` | Get all books |
-| GET | `/api/books/GetAllWithPagination?pageNumber=1&pageSize=10` | Get paginated books |
+| GET | `/api/books/pagination?pageNumber=1&pageSize=10` | Get paginated books (max 100 per page) |
 | GET | `/api/books/{id}` | Get book by ID |
-| GET | `/api/books/get-books-by-category/{categoryId}` | Get books by category |
-| GET | `/api/books/search/{bookName}` | Search books by name |
-| GET | `/api/books/search-book-with-category/{searchedValue}` | Search across name, author, description, and category |
+| GET | `/api/books/categories/{categoryId}` | Get books by category |
+| GET | `/api/books/search?q={term}` | Search books by name |
+| GET | `/api/books/search-with-category?q={term}` | Search across name, author, description, and category |
 | POST | `/api/books` | Create a new book |
 | PUT | `/api/books/{id}` | Update a book |
 | DELETE | `/api/books/{id}` | Delete a book |
@@ -67,12 +73,36 @@ src/
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/categories` | Get all categories |
-| GET | `/api/categories/GetAllWithPagination?pageNumber=1&pageSize=10` | Get paginated categories |
+| GET | `/api/categories/pagination?pageNumber=1&pageSize=10` | Get paginated categories (max 100 per page) |
 | GET | `/api/categories/{id}` | Get category by ID |
-| GET | `/api/categories/search/{category}` | Search categories by name |
+| GET | `/api/categories/search?q={term}` | Search categories by name |
 | POST | `/api/categories` | Create a new category |
 | PUT | `/api/categories/{id}` | Update a category |
 | DELETE | `/api/categories/{id}` | Delete a category |
+
+### API Design Notes
+
+- **Kebab-case routes**: All routes use lowercase with hyphens (e.g., `/search-with-category`)
+- **Query parameters**: Search operations use `?q=` query parameter instead of route parameters
+- **Pagination limits**: Page size is validated between 1-100 using `[Range]` attributes
+- **Consistent error codes**:
+  - `200 OK` - Success
+  - `201 Created` - Resource created
+  - `204 No Content` - Successful delete
+  - `400 Bad Request` - Validation error
+  - `404 Not Found` - Resource not found
+  - `409 Conflict` - Duplicate resource or has dependencies
+  - `500 Internal Server Error` - Unexpected error
+
+## Error Response Format
+
+All error responses follow a consistent structure:
+
+```json
+{
+  "message": "Validation error message"
+}
+```
 
 ## Getting Started
 
@@ -84,15 +114,23 @@ src/
 ### Running the Application
 
 1. Clone the repository
-2. Update the connection string in `appsettings.json` if needed
+   ```bash
+   git clone https://github.com/henriquesd/BookStoreDemo.git
+   cd BookStoreDemo
+   ```
+
+2. Update the connection string in `src/BookStore.API/appsettings.json` if needed
+
 3. Run the migrations:
    ```bash
    dotnet ef database update --project src/BookStore.Infrastructure --startup-project src/BookStore.API
    ```
+
 4. Run the application:
    ```bash
    dotnet run --project src/BookStore.API
    ```
+
 5. Access Swagger UI at `https://localhost:44382/swagger`
 
 ## Commands
@@ -124,31 +162,93 @@ dotnet ef migrations add <MigrationName> --project src/BookStore.Infrastructure 
 ### Run Tests
 
 ```bash
-# Run all tests
+# Run all tests (240 tests)
 dotnet test
 
 # Run specific test project
 dotnet test tests/BookStore.Domain.Tests
 dotnet test tests/BookStore.Infrastructure.Tests
 dotnet test tests/BookStore.API.Tests
+
+# Run tests with detailed output
+dotnet test --verbosity detailed
 ```
 
 ## API Testing
 
-Use the `src/BookStore.API/BookStore.http` file for manual API testing with VS Code REST Client or JetBrains Rider HTTP Client.
+Use the `src/BookStore.API/BookStore.http` file for manual API testing with:
+- **VS Code**: Install REST Client extension
+- **JetBrains Rider**: Built-in HTTP Client
+- **Visual Studio**: Built-in .http file support
+
+The file includes comprehensive test scenarios for:
+- Happy path requests
+- Validation error tests
+- Not found scenarios
+- Edge cases
 
 ## Project Structure
 
 ```
 BookStoreDemo/
 ├── src/
-│   ├── BookStore.API/
-│   ├── BookStore.Domain/
-│   └── BookStore.Infrastructure/
+│   ├── BookStore.API/              # HTTP API Layer
+│   │   ├── Controllers/            # API Controllers
+│   │   ├── Dtos/                   # Data Transfer Objects
+│   │   ├── Mappings/               # Extension methods for mapping
+│   │   ├── Middleware/             # Exception handling middleware
+│   │   ├── Configuration/          # DI and service configuration
+│   │   ├── GlobalUsings.cs         # Global using directives
+│   │   └── BookStore.http          # API test collection
+│   │
+│   ├── BookStore.Domain/           # Domain Layer
+│   │   ├── Models/                 # Domain entities
+│   │   ├── Interfaces/             # Contracts
+│   │   ├── Services/               # Business logic
+│   │   └── Constants/              # Error messages
+│   │
+│   └── BookStore.Infrastructure/   # Data Access Layer
+│       ├── Context/                # DbContext
+│       ├── Repositories/           # Repository implementations
+│       ├── Mappings/               # EF Core configurations
+│       └── Migrations/             # Database migrations
+│
 ├── tests/
-│   ├── BookStore.API.Tests/
-│   ├── BookStore.Domain.Tests/
-│   └── BookStore.Infrastructure.Tests/
-├── BookStore.slnx
-└── Readme.md
+│   ├── BookStore.API.Tests/        # Controller integration tests
+│   ├── BookStore.Domain.Tests/     # Service unit tests
+│   └── BookStore.Infrastructure.Tests/  # Repository tests
+│
+├── BookStore.slnx                  # Solution file
+└── README.md                       # This file
 ```
+
+## Recent Updates
+
+### v2.0 - API Modernization (Latest)
+- ✅ Implemented Result pattern across all service methods
+- ✅ Standardized API routes to kebab-case
+- ✅ Migrated search endpoints to use query parameters
+- ✅ Added automatic pagination validation with `[Range]` attributes
+- ✅ Implemented standardized `ErrorResponse` DTO
+- ✅ Refactored controllers to use primary constructors (C# 12)
+- ✅ Added `GlobalUsings.cs` for cleaner code
+- ✅ Updated all 240 unit tests to match new patterns
+- ✅ Enhanced error handling and validation
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is for educational purposes.
+
+## Contact
+
+Henrique - [@henriquesd](https://github.com/henriquesd)
+
+Project Link: [https://github.com/henriquesd/BookStoreDemo](https://github.com/henriquesd/BookStoreDemo)

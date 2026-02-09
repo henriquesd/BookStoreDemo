@@ -1,6 +1,3 @@
-using System;
-using System.ComponentModel.DataAnnotations;
-
 namespace BookStore.API.Dtos.Book
 {
     public class BookEditDto
@@ -29,3 +26,4 @@ namespace BookStore.API.Dtos.Book
         public DateTime PublishDate { get; set; }
     }
 }
+

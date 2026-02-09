@@ -1,6 +1,3 @@
-using System;
-using System.ComponentModel.DataAnnotations;
-
 namespace BookStore.API.Dtos.Book
 {
     public class BookAddDto

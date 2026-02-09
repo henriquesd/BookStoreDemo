@@ -1,7 +1,3 @@
-using BookStore.API.Dtos.Category;
-using BookStore.Domain.Interfaces;
-using BookStore.Domain.Models;
-
 namespace BookStore.API.Mappings
 {
     public static class CategoryMappingExtensions

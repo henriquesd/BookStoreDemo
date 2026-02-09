@@ -18,7 +18,11 @@ GET {{baseUrl}}/api/categories
 Accept: {{contentType}}
 
 ### Get Categories with Pagination
-GET {{baseUrl}}/api/categories/GetAllWithPagination?pageNumber=1&pageSize=10
+GET {{baseUrl}}/api/categories/pagination?pageNumber=1&pageSize=10
+Accept: {{contentType}}
+
+### Get Categories with Pagination - Invalid Parameters (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/categories/pagination?pageNumber=0&pageSize=101
 Accept: {{contentType}}
 
 ### Get Category by ID
@@ -81,11 +85,15 @@ DELETE {{baseUrl}}/api/categories/{{deleteCatId}}
 DELETE {{baseUrl}}/api/categories/999
 
 ### Search Categories
-GET {{baseUrl}}/api/categories/search/fiction
+GET {{baseUrl}}/api/categories/search?q=fiction
 Accept: {{contentType}}
 
-### Search Categories - No Results (Should return 404)
-GET {{baseUrl}}/api/categories/search/XYZ999NOTFOUND
+### Search Categories - Empty Search Term (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/categories/search?q=
+Accept: {{contentType}}
+
+### Search Categories - No Results
+GET {{baseUrl}}/api/categories/search?q=XYZ999NOTFOUND
 Accept: {{contentType}}
 
 ###############################################################################
@@ -97,11 +105,15 @@ GET {{baseUrl}}/api/books
 Accept: {{contentType}}
 
 ### Get Books with Pagination
-GET {{baseUrl}}/api/books/GetAllWithPagination?pageNumber=1&pageSize=10
+GET {{baseUrl}}/api/books/pagination?pageNumber=1&pageSize=10
 Accept: {{contentType}}
 
 ### Get Books with Pagination - Invalid Parameters (ERROR TEST - Should return 400)
-GET {{baseUrl}}/api/books/GetAllWithPagination?pageNumber=0&pageSize=0
+GET {{baseUrl}}/api/books/pagination?pageNumber=0&pageSize=0
+Accept: {{contentType}}
+
+### Get Books with Pagination - PageSize > 100 (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/pagination?pageNumber=1&pageSize=101
 Accept: {{contentType}}
 
 ### Get Book by ID
@@ -112,16 +124,20 @@ Accept: {{contentType}}
 GET {{baseUrl}}/api/books/999
 Accept: {{contentType}}
 
+### Get Book by ID - Invalid ID (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/0
+Accept: {{contentType}}
+
 ### Get Books by Category
-GET {{baseUrl}}/api/books/get-books-by-category/1
+GET {{baseUrl}}/api/books/categories/1
 Accept: {{contentType}}
 
 ### Get Books by Category - Invalid ID (ERROR TEST - Should return 400)
-GET {{baseUrl}}/api/books/get-books-by-category/0
+GET {{baseUrl}}/api/books/categories/0
 Accept: {{contentType}}
 
-### Get Books by Category - No Results (Should return 404)
-GET {{baseUrl}}/api/books/get-books-by-category/999
+### Get Books by Category - No Results
+GET {{baseUrl}}/api/books/categories/999
 Accept: {{contentType}}
 
 ### Create Book - With Timestamp Name (SAFE)
@@ -216,17 +232,25 @@ DELETE {{baseUrl}}/api/books/999
 DELETE {{baseUrl}}/api/books/0
 
 ### Search Books by Name
-GET {{baseUrl}}/api/books/search/martian
+GET {{baseUrl}}/api/books/search?q=martian
 Accept: {{contentType}}
 
-### Search Books - No Results (Should return 404)
-GET {{baseUrl}}/api/books/search/XYZ999NOTFOUND
+### Search Books - Empty Search Term (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/search?q=
+Accept: {{contentType}}
+
+### Search Books - No Results
+GET {{baseUrl}}/api/books/search?q=XYZ999NOTFOUND
 Accept: {{contentType}}
 
 ### Search Books with Category
-GET {{baseUrl}}/api/books/search-book-with-category/science
+GET {{baseUrl}}/api/books/search-with-category?q=science
 Accept: {{contentType}}
 
-### Search Books with Category - No Results (Should return 404)
-GET {{baseUrl}}/api/books/search-book-with-category/XYZ999NOTFOUND
+### Search Books with Category - Empty Search Term (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/search-with-category?q=
+Accept: {{contentType}}
+
+### Search Books with Category - No Results
+GET {{baseUrl}}/api/books/search-with-category?q=XYZ999NOTFOUND
 Accept: {{contentType}}
