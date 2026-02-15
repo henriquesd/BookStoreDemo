@@ -48,6 +48,9 @@ src/
 - **Repository Pattern**: Generic `IRepository<T>` with specialized implementations
 - **Manual Mapping**: Extension methods for Model-DTO conversions
 - **Standardized Error Responses**: `ErrorResponse` DTO for consistent API errors
+- **Structured Logging**: Comprehensive logging with `ILogger<T>` using structured parameters
+- **N+1 Query Prevention**: All queries use eager loading with `.Include()` to prevent N+1 issues
+- **Search Pagination**: All search operations support pagination to handle large result sets efficiently
 
 ## API Endpoints
 
@@ -59,8 +62,10 @@ src/
 | GET | `/api/books/pagination?pageNumber=1&pageSize=10` | Get paginated books (max 100 per page) |
 | GET | `/api/books/{id}` | Get book by ID |
 | GET | `/api/books/categories/{categoryId}` | Get books by category |
-| GET | `/api/books/search?q={term}` | Search books by name |
-| GET | `/api/books/search-with-category?q={term}` | Search across name, author, description, and category |
+| GET | `/api/books/search?q={term}` | Search books by name (returns all matches) |
+| GET | `/api/books/search/pagination?q={term}&pageNumber=1&pageSize=10` | Search books by name with pagination |
+| GET | `/api/books/search-with-category?q={term}` | Search across name, author, description, and category (returns all matches) |
+| GET | `/api/books/search-with-category/pagination?q={term}&pageNumber=1&pageSize=10` | Search with category filter with pagination |
 | POST | `/api/books` | Create a new book |
 | PUT | `/api/books/{id}` | Update a book |
 | DELETE | `/api/books/{id}` | Delete a book |
@@ -72,7 +77,8 @@ src/
 | GET | `/api/categories` | Get all categories |
 | GET | `/api/categories/pagination?pageNumber=1&pageSize=10` | Get paginated categories (max 100 per page) |
 | GET | `/api/categories/{id}` | Get category by ID |
-| GET | `/api/categories/search?q={term}` | Search categories by name |
+| GET | `/api/categories/search?q={term}` | Search categories by name (returns all matches) |
+| GET | `/api/categories/search/pagination?q={term}&pageNumber=1&pageSize=10` | Search categories by name with pagination |
 | POST | `/api/categories` | Create a new category |
 | PUT | `/api/categories/{id}` | Update a category |
 | DELETE | `/api/categories/{id}` | Delete a category |
@@ -81,7 +87,11 @@ src/
 
 - **Kebab-case routes**: All routes use lowercase with hyphens (e.g., `/search-with-category`)
 - **Query parameters**: Search operations use `?q=` query parameter instead of route parameters
-- **Pagination limits**: Page size is validated between 1-100 using `[Range]` attributes
+- **Pagination support**:
+  - Standard pagination: `/pagination?pageNumber=1&pageSize=10`
+  - Search pagination: `/search/pagination?q={term}&pageNumber=1&pageSize=10`
+  - Page size is validated between 1-100 using `[Range]` attributes
+  - Returns `PagedResponse<T>` with metadata (TotalPages, TotalRecords, PageNumber, PageSize)
 - **Consistent error codes**:
   - `200 OK` - Success
   - `201 Created` - Resource created
@@ -91,7 +101,36 @@ src/
   - `409 Conflict` - Duplicate resource or has dependencies
   - `500 Internal Server Error` - Unexpected error
 
-## Error Response Format
+## Response Formats
+
+### Paginated Response
+
+Pagination endpoints return a `PagedResponse<T>` structure:
+
+```json
+{
+  "pageNumber": 1,
+  "pageSize": 10,
+  "totalRecords": 42,
+  "totalPages": 5,
+  "data": [
+    {
+      "id": 1,
+      "name": "Book Title",
+      "author": "Author Name",
+      "value": 29.99,
+      "publishDate": "2024-01-15T00:00:00",
+      "categoryId": 1,
+      "category": {
+        "id": 1,
+        "name": "Fiction"
+      }
+    }
+  ]
+}
+```
+
+### Error Response Format
 
 All error responses follow a consistent structure:
 
@@ -218,9 +257,3 @@ BookStoreDemo/
 ├── BookStore.slnx                  # Solution file
 └── README.md                       # This file
 ```
-
-## Contact
-
-Henrique - [@henriquesd](https://github.com/henriquesd)
-
-Project Link: [https://github.com/henriquesd/BookStoreDemo](https://github.com/henriquesd/BookStoreDemo)

@@ -12,7 +12,7 @@ namespace BookStore.Domain.Services
                 return OperationResult<T>.ValidationError(string.Format(ErrorMessages.EntityCannotBeNull, entityName));
             }
 
-            return new OperationResult<T>(true, null);
+            return OperationResult<T>.SuccessResult();
         }
 
         public static OperationResult<T> ValidateRequiredString<T>(string? value, string fieldName) where T : class
@@ -22,7 +22,7 @@ namespace BookStore.Domain.Services
                 return OperationResult<T>.ValidationError(string.Format(ErrorMessages.FieldRequired, fieldName));
             }
 
-            return new OperationResult<T>(true, null);
+            return OperationResult<T>.SuccessResult();
         }
 
         public static OperationResult<T> ValidateId<T>(int id, string entityName) where T : class
@@ -32,7 +32,7 @@ namespace BookStore.Domain.Services
                 return OperationResult<T>.ValidationError(string.Format(ErrorMessages.InvalidId, entityName));
             }
 
-            return new OperationResult<T>(true, null);
+            return OperationResult<T>.SuccessResult();
         }
 
         public static OperationResult<bool> ValidateIdForRemoval(int id, string entityName)
@@ -42,7 +42,7 @@ namespace BookStore.Domain.Services
                 return OperationResult<bool>.ValidationError(string.Format(ErrorMessages.InvalidId, entityName));
             }
 
-            return new OperationResult<bool>(true, null);
+            return OperationResult<bool>.SuccessResult();
         }
 
         public static OperationResult<PagedResponse<T>> ValidatePagination<T>(int pageNumber, int pageSize) where T : class
@@ -57,7 +57,7 @@ namespace BookStore.Domain.Services
                 return OperationResult<PagedResponse<T>>.ValidationError("Page size must be between 1 and 100");
             }
 
-            return new OperationResult<PagedResponse<T>>(true, null);
+            return OperationResult<PagedResponse<T>>.SuccessResult();
         }
     }
 }

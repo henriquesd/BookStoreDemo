@@ -72,6 +72,20 @@ namespace BookStore.Infrastructure.Repositories
             return await DbSet.AsNoTracking().Where(predicate).ToListAsync(ct);
         }
 
+        public virtual async Task<PagedResponse<TEntity>> SearchWithPagination(Expression<Func<TEntity, bool>> predicate, int pageNumber, int pageSize, CancellationToken ct = default)
+        {
+            var query = DbSet.AsNoTracking().Where(predicate);
+            var totalRecords = await query.CountAsync(ct);
+
+            var entities = await query
+                .OrderBy(e => e.Id)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+
+            return new PagedResponse<TEntity>(entities, pageNumber, pageSize, totalRecords);
+        }
+
         public async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
         {
             return await DbSet.AsNoTracking().AnyAsync(predicate, ct);

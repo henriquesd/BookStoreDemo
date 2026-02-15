@@ -24,8 +24,8 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetAllWithPagination(
-            [Range(1, int.MaxValue)] int pageNumber = 1, 
-            [Range(1, 100)] int pageSize = 10, 
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10,
             CancellationToken ct = default)
         {
             var result = await categoryService.GetAllWithPagination(pageNumber, pageSize, ct);
@@ -119,6 +119,26 @@ namespace BookStore.API.Controllers
             }
 
             var categoriesResultDto = result.Payload!.ToDto();
+            return Ok(categoriesResultDto);
+        }
+
+        [HttpGet("search/pagination")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SearchWithPagination(
+            [FromQuery] string q,
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            var result = await categoryService.SearchWithPagination(q, pageNumber, pageSize, ct);
+
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
+
+            var categoriesResultDto = result.Payload!.ToDto(c => c.ToDto());
             return Ok(categoriesResultDto);
         }
     }

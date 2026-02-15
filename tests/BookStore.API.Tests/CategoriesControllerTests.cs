@@ -197,9 +197,13 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var dto = _fixture.Create<CategoryAddDto>();
-            var category = dto.ToModel();
-            category.Id = _fixture.Create<int>();
-            var operationResult = new OperationResult<Category>(category, true, null);
+            var categoryFromDto = dto.ToModel();
+            var category = new Category
+            {
+                Id = _fixture.Create<int>(),
+                Name = categoryFromDto.Name
+            };
+            var operationResult = OperationResult<Category>.SuccessResult(category);
             _categoryServiceMock.Add(Arg.Any<Category>()).Returns(operationResult);
 
             // Act
@@ -219,7 +223,7 @@ namespace BookStore.API.Tests
             // Arrange
             var dto = _fixture.Create<CategoryAddDto>();
             var errorMessage = _fixture.Create<string>();
-            var operationResult = new OperationResult<Category>(false, errorMessage);
+            var operationResult = OperationResult<Category>.ValidationError(errorMessage);
             _categoryServiceMock.Add(Arg.Any<Category>()).Returns(operationResult);
 
             // Act
@@ -235,7 +239,7 @@ namespace BookStore.API.Tests
             // Arrange
             var dto = _fixture.Create<CategoryAddDto>();
             var category = dto.ToModel();
-            var operationResult = new OperationResult<Category>(category, true, null);
+            var operationResult = OperationResult<Category>.SuccessResult(category);
             _categoryServiceMock.Add(Arg.Any<Category>()).Returns(operationResult);
 
             // Act
@@ -251,7 +255,7 @@ namespace BookStore.API.Tests
             // Arrange
             var dto = _fixture.Create<CategoryEditDto>();
             var category = dto.ToModel();
-            var operationResult = new OperationResult<Category>(category, true, null);
+            var operationResult = OperationResult<Category>.SuccessResult(category);
             _categoryServiceMock.Update(Arg.Any<Category>()).Returns(operationResult);
 
             // Act
@@ -300,7 +304,7 @@ namespace BookStore.API.Tests
             // Arrange
             var dto = _fixture.Create<CategoryEditDto>();
             var category = dto.ToModel();
-            var operationResult = new OperationResult<Category>(category, true, null);
+            var operationResult = OperationResult<Category>.SuccessResult(category);
             _categoryServiceMock.Update(Arg.Any<Category>()).Returns(operationResult);
 
             // Act
@@ -315,7 +319,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var categoryId = _fixture.Create<int>();
-            var operationResult = new OperationResult<bool>(true, true, null);
+            var operationResult = OperationResult<bool>.SuccessResult(true);
             _categoryServiceMock.Remove(categoryId).Returns(operationResult);
 
             // Act
@@ -345,7 +349,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var categoryId = _fixture.Create<int>();
-            var operationResult = new OperationResult<bool>(false, _fixture.Create<string>());
+            var operationResult = OperationResult<bool>.ValidationError(_fixture.Create<string>());
             _categoryServiceMock.Remove(categoryId).Returns(operationResult);
 
             // Act
@@ -360,7 +364,7 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var categoryId = _fixture.Create<int>();
-            var operationResult = new OperationResult<bool>(true, true, null);
+            var operationResult = OperationResult<bool>.SuccessResult(true);
             _categoryServiceMock.Remove(categoryId).Returns(operationResult);
 
             // Act

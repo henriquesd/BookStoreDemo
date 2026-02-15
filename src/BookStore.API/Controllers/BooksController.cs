@@ -24,8 +24,8 @@ namespace BookStore.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetAllWithPagination(
-            [Range(1, int.MaxValue)] int pageNumber = 1, 
-            [Range(1, 100)] int pageSize = 10, 
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10,
             CancellationToken ct = default)
         {
             var result = await bookService.GetAllWithPagination(pageNumber, pageSize, ct);
@@ -151,6 +151,46 @@ namespace BookStore.API.Controllers
             }
 
             var booksResultDto = result.Payload!.ToDto();
+            return Ok(booksResultDto);
+        }
+
+        [HttpGet("search/pagination")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SearchWithPagination(
+            [FromQuery] string q,
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            var result = await bookService.SearchWithPagination(q, pageNumber, pageSize, ct);
+
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
+
+            var booksResultDto = result.Payload!.ToDto(b => b.ToDto());
+            return Ok(booksResultDto);
+        }
+
+        [HttpGet("search-with-category/pagination")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SearchBookWithCategoryPagination(
+            [FromQuery] string q,
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            var result = await bookService.SearchBookWithCategoryPagination(q, pageNumber, pageSize, ct);
+
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
+
+            var booksResultDto = result.Payload!.ToDto(b => b.ToDto());
             return Ok(booksResultDto);
         }
     }

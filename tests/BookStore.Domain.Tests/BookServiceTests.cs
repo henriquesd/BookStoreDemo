@@ -6,6 +6,7 @@ using BookStore.Domain.Models;
 using BookStore.Domain.Services;
 using BookStore.Domain.Tests.Helpers;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 
@@ -16,6 +17,7 @@ namespace BookStore.Domain.Tests
         private readonly Fixture _fixture;
         private readonly IBookRepository _bookRepositoryMock;
         private readonly ICategoryRepository _categoryRepositoryMock;
+        private readonly ILogger<BookService> _loggerMock;
         private readonly BookService _service;
 
         public BookServiceTests()
@@ -23,14 +25,15 @@ namespace BookStore.Domain.Tests
             _fixture = FixtureFactory.Create();
             _bookRepositoryMock = Substitute.For<IBookRepository>();
             _categoryRepositoryMock = Substitute.For<ICategoryRepository>();
-            _service = new BookService(_bookRepositoryMock, _categoryRepositoryMock);
+            _loggerMock = Substitute.For<ILogger<BookService>>();
+            _service = new BookService(_bookRepositoryMock, _categoryRepositoryMock, _loggerMock);
         }
 
         [Fact]
         public void Constructor_Should_ThrowArgumentNullException_When_BookRepositoryIsNull()
         {
             // Arrange & Act
-            Action act = () => new BookService(null!, _categoryRepositoryMock);
+            Action act = () => new BookService(null!, _categoryRepositoryMock, _loggerMock);
 
             // Assert
             act.Should().Throw<ArgumentNullException>()
@@ -41,11 +44,22 @@ namespace BookStore.Domain.Tests
         public void Constructor_Should_ThrowArgumentNullException_When_CategoryRepositoryIsNull()
         {
             // Arrange & Act
-            Action act = () => new BookService(_bookRepositoryMock, null!);
+            Action act = () => new BookService(_bookRepositoryMock, null!, _loggerMock);
 
             // Assert
             act.Should().Throw<ArgumentNullException>()
                 .WithParameterName("categoryRepository");
+        }
+
+        [Fact]
+        public void Constructor_Should_ThrowArgumentNullException_When_LoggerIsNull()
+        {
+            // Arrange & Act
+            Action act = () => new BookService(_bookRepositoryMock, _categoryRepositoryMock, null!);
+
+            // Assert
+            act.Should().Throw<ArgumentNullException>()
+                .WithParameterName("logger");
         }
 
         [Fact]
@@ -537,7 +551,7 @@ namespace BookStore.Domain.Tests
         }
 
         [Fact]
-        public async Task Add_Should_ReturnError_When_RepositoryThrowsException()
+        public async Task Add_Should_ThrowException_When_RepositoryThrowsException()
         {
             // Arrange
             var book = _fixture.Build<Book>()
@@ -549,13 +563,11 @@ namespace BookStore.Domain.Tests
             _bookRepositoryMock.Add(book, Arg.Any<CancellationToken>()).Returns(Task.FromException(new Exception(exceptionMessage)));
 
             // Act
-            var result = await _service.Add(book);
+            Func<Task> act = async () => await _service.Add(book);
 
             // Assert
-            result.Should().NotBeNull();
-            result.Success.Should().BeFalse();
-            result.ErrorCode.Should().Be(OperationErrorCode.UnexpectedError);
-            result.Message.Should().Be(string.Format(ErrorMessages.BookAddError, exceptionMessage));
+            await act.Should().ThrowAsync<Exception>()
+                .WithMessage(exceptionMessage);
         }
 
         [Fact]
@@ -721,7 +733,7 @@ namespace BookStore.Domain.Tests
         }
 
         [Fact]
-        public async Task Update_Should_ReturnError_When_RepositoryThrowsException()
+        public async Task Update_Should_ThrowException_When_RepositoryThrowsException()
         {
             // Arrange
             var book = _fixture.Build<Book>()
@@ -735,13 +747,11 @@ namespace BookStore.Domain.Tests
             _bookRepositoryMock.Update(book, Arg.Any<CancellationToken>()).Returns(Task.FromException(new Exception(exceptionMessage)));
 
             // Act
-            var result = await _service.Update(book);
+            Func<Task> act = async () => await _service.Update(book);
 
             // Assert
-            result.Should().NotBeNull();
-            result.Success.Should().BeFalse();
-            result.ErrorCode.Should().Be(OperationErrorCode.UnexpectedError);
-            result.Message.Should().Be(string.Format(ErrorMessages.BookUpdateError, exceptionMessage));
+            await act.Should().ThrowAsync<Exception>()
+                .WithMessage(exceptionMessage);
         }
 
         [Fact]
@@ -815,7 +825,7 @@ namespace BookStore.Domain.Tests
         }
 
         [Fact]
-        public async Task Remove_Should_ReturnError_When_RepositoryThrowsException()
+        public async Task Remove_Should_ThrowException_When_RepositoryThrowsException()
         {
             // Arrange
             var bookId = 1;
@@ -827,13 +837,11 @@ namespace BookStore.Domain.Tests
             _bookRepositoryMock.Remove(book, Arg.Any<CancellationToken>()).Returns(Task.FromException(new Exception(exceptionMessage)));
 
             // Act
-            var result = await _service.Remove(bookId);
+            Func<Task> act = async () => await _service.Remove(bookId);
 
             // Assert
-            result.Should().NotBeNull();
-            result.Success.Should().BeFalse();
-            result.ErrorCode.Should().Be(OperationErrorCode.UnexpectedError);
-            result.Message.Should().Be(string.Format(ErrorMessages.BookRemoveError, exceptionMessage));
+            await act.Should().ThrowAsync<Exception>()
+                .WithMessage(exceptionMessage);
         }
     }
 }

@@ -45,11 +45,20 @@ namespace BookStore.API.Mappings
         {
             ArgumentNullException.ThrowIfNull(operationResult);
 
-            return new OperationResult<CategoryResultDto>(
-                operationResult.Payload?.ToDto(),
-                operationResult.Success,
-                operationResult.Message
-            );
+            if (operationResult.Success && operationResult.Payload != null)
+            {
+                return OperationResult<CategoryResultDto>.SuccessResult(operationResult.Payload.ToDto());
+            }
+
+            // Map error results
+            return operationResult.ErrorCode switch
+            {
+                OperationErrorCode.NotFound => OperationResult<CategoryResultDto>.NotFound(operationResult.Message ?? "Not found"),
+                OperationErrorCode.Duplicate => OperationResult<CategoryResultDto>.Duplicate(operationResult.Message ?? "Duplicate"),
+                OperationErrorCode.HasDependencies => OperationResult<CategoryResultDto>.HasDependencies(operationResult.Message ?? "Has dependencies"),
+                OperationErrorCode.ValidationError => OperationResult<CategoryResultDto>.ValidationError(operationResult.Message ?? "Validation error"),
+                _ => OperationResult<CategoryResultDto>.Failure(operationResult.Message ?? "An error occurred")
+            };
         }
     }
 }

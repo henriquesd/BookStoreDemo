@@ -22,6 +22,8 @@ builder.Services.ResolveDependencies();
 
 var app = builder.Build();
 
+app.UseRequestLogging();
+
 app.UseGlobalExceptionHandler();
 
 app.ConfigureSwagger();

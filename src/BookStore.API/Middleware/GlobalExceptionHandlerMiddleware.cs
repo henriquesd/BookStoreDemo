@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookStore.API.Middleware
 {
@@ -38,21 +39,56 @@ namespace BookStore.API.Middleware
         private async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-            var response = _environment.IsDevelopment()
-                ? new
-                {
-                    message = "An unexpected error occurred",
-                    detail = exception.Message,
-                    stackTrace = exception.StackTrace
-                }
-                : new
-                {
-                    message = "An unexpected error occurred",
-                    detail = (string?)null,
-                    stackTrace = (string?)null
-                };
+            var (statusCode, message, detail) = exception switch
+            {
+                DbUpdateConcurrencyException => (
+                    StatusCodes.Status409Conflict,
+                    "Concurrency conflict",
+                    "The record was modified by another user. Please refresh and try again."
+                ),
+                DbUpdateException dbEx => (
+                    StatusCodes.Status400BadRequest,
+                    "Database operation failed",
+                    _environment.IsDevelopment() ? dbEx.InnerException?.Message ?? dbEx.Message : "A database error occurred"
+                ),
+                ArgumentNullException nullEx => (
+                    StatusCodes.Status400BadRequest,
+                    "Missing required parameter",
+                    nullEx.ParamName != null ? $"{nullEx.ParamName} is required" : "A required parameter is missing"
+                ),
+                ArgumentException argEx => (
+                    StatusCodes.Status400BadRequest,
+                    "Invalid argument",
+                    argEx.Message
+                ),
+                InvalidOperationException => (
+                    StatusCodes.Status400BadRequest,
+                    "Invalid operation",
+                    _environment.IsDevelopment() ? exception.Message : "The operation could not be completed"
+                ),
+                UnauthorizedAccessException => (
+                    StatusCodes.Status401Unauthorized,
+                    "Unauthorized",
+                    "You are not authorized to perform this action"
+                ),
+                _ => (
+                    StatusCodes.Status500InternalServerError,
+                    "Internal server error",
+                    _environment.IsDevelopment() ? exception.Message : "An unexpected error occurred"
+                )
+            };
+
+            context.Response.StatusCode = statusCode;
+
+            var response = new
+            {
+                message = message,
+                detail = detail,
+                type = exception.GetType().Name,
+                traceId = context.TraceIdentifier,
+                stackTrace = _environment.IsDevelopment() ? exception.StackTrace : null
+            };
 
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
             await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));

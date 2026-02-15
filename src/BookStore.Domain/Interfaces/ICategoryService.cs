@@ -11,5 +11,6 @@ namespace BookStore.Domain.Interfaces
         Task<IOperationResult<Category>> Update(Category category, CancellationToken ct = default);
         Task<IOperationResult<bool>> Remove(int id, CancellationToken ct = default);
         Task<IOperationResult<IEnumerable<Category>>> Search(string categoryName, CancellationToken ct = default);
+        Task<IOperationResult<PagedResponse<Category>>> SearchWithPagination(string categoryName, int pageNumber, int pageSize, CancellationToken ct = default);
     }
 }

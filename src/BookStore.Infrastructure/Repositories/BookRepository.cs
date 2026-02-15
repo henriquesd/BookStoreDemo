@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using BookStore.Infrastructure.Context;
@@ -8,6 +9,19 @@ namespace BookStore.Infrastructure.Repositories
     public class BookRepository : Repository<Book>, IBookRepository
     {
         public BookRepository(BookStoreDbContext context) : base(context) { }
+
+        /// <summary>
+        /// Creates a search predicate that searches across multiple book fields including category name.
+        /// </summary>
+        /// <param name="searchValue">The value to search for</param>
+        /// <returns>An expression that can be used in LINQ queries</returns>
+        private static Expression<Func<Book, bool>> CreateSearchPredicate(string searchValue)
+        {
+            return b => b.Name.Contains(searchValue) ||
+                        b.Author.Contains(searchValue) ||
+                        (b.Description != null && b.Description.Contains(searchValue)) ||
+                        (b.Category != null && b.Category.Name.Contains(searchValue));
+        }
 
         public override async Task<IEnumerable<Book>> GetAll(CancellationToken ct = default)
         {
@@ -44,6 +58,24 @@ namespace BookStore.Infrastructure.Repositories
                 .FirstOrDefaultAsync(ct);
         }
 
+        public override async Task<PagedResponse<Book>> SearchWithPagination(Expression<Func<Book, bool>> predicate, int pageNumber, int pageSize, CancellationToken ct = default)
+        {
+            var query = Db.Books
+                .AsNoTracking()
+                .Include(b => b.Category)
+                .Where(predicate);
+
+            var totalRecords = await query.CountAsync(ct);
+
+            var books = await query
+                .OrderBy(b => b.Name)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+
+            return new PagedResponse<Book>(books, pageNumber, pageSize, totalRecords);
+        }
+
         public async Task<IEnumerable<Book>> GetBooksByCategory(int categoryId, CancellationToken ct = default)
         {
             return await Db.Books
@@ -58,11 +90,26 @@ namespace BookStore.Infrastructure.Repositories
             return await Db.Books
                 .AsNoTracking()
                 .Include(b => b.Category)
-                .Where(b => b.Name.Contains(searchedValue) ||
-                            b.Author.Contains(searchedValue) ||
-                            (b.Description != null && b.Description.Contains(searchedValue)) ||
-                            (b.Category != null && b.Category.Name.Contains(searchedValue)))
+                .Where(CreateSearchPredicate(searchedValue))
                 .ToListAsync(ct);
+        }
+
+        public async Task<PagedResponse<Book>> SearchBookWithCategoryPagination(string searchedValue, int pageNumber, int pageSize, CancellationToken ct = default)
+        {
+            var query = Db.Books
+                .AsNoTracking()
+                .Include(b => b.Category)
+                .Where(CreateSearchPredicate(searchedValue));
+
+            var totalRecords = await query.CountAsync(ct);
+
+            var books = await query
+                .OrderBy(b => b.Name)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+
+            return new PagedResponse<Book>(books, pageNumber, pageSize, totalRecords);
         }
     }
 }

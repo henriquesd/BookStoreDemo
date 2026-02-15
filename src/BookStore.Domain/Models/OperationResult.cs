@@ -9,17 +9,7 @@ namespace BookStore.Domain.Models
         public string? Message { get; init; }
         public OperationErrorCode ErrorCode { get; init; }
 
-        public OperationResult(T? payload)
-            : this(payload, true, null, OperationErrorCode.None)
-        {
-        }
-
-        public OperationResult(bool success, string? message, OperationErrorCode errorCode = OperationErrorCode.ValidationError)
-            : this(default, success, message, success ? OperationErrorCode.None : errorCode)
-        {
-        }
-
-        public OperationResult(T? payload, bool success, string? message, OperationErrorCode errorCode = OperationErrorCode.None)
+        private OperationResult(T? payload, bool success, string? message, OperationErrorCode errorCode)
         {
             Payload = payload;
             Success = success;
@@ -27,6 +17,14 @@ namespace BookStore.Domain.Models
             ErrorCode = errorCode;
         }
 
+        // Success factory methods
+        public static OperationResult<T> SuccessResult(T payload) =>
+            new(payload, true, "Success", OperationErrorCode.None);
+
+        public static OperationResult<T> SuccessResult() =>
+            new(default, true, "Success", OperationErrorCode.None);
+
+        // Failure factory methods
         public static OperationResult<T> NotFound(string message) =>
             new(default, false, message, OperationErrorCode.NotFound);
 
@@ -39,10 +37,15 @@ namespace BookStore.Domain.Models
         public static OperationResult<T> HasDependencies(string message) =>
             new(default, false, message, OperationErrorCode.HasDependencies);
 
-        public static OperationResult<T> Error(string message) =>
-            new(default, false, message, OperationErrorCode.UnexpectedError);
+        public static OperationResult<T> Failure(string message, OperationErrorCode errorCode = OperationErrorCode.UnexpectedError) =>
+            new(default, false, message, errorCode);
 
-        public static OperationResult<T> Ok(T payload) =>
-            new(payload);
+        // Legacy method for backward compatibility - to be removed after migration
+        [Obsolete("Use SuccessResult instead")]
+        public static OperationResult<T> Ok(T payload) => SuccessResult(payload);
+
+        // Legacy method for backward compatibility - to be removed after migration
+        [Obsolete("Use Failure instead")]
+        public static OperationResult<T> Error(string message) => Failure(message);
     }
 }

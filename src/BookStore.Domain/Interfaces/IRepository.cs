@@ -13,6 +13,7 @@ namespace BookStore.Domain.Interfaces
         Task Update(TEntity entity, CancellationToken ct = default);
         Task Remove(TEntity entity, CancellationToken ct = default);
         Task<IEnumerable<TEntity>> Search(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
+        Task<PagedResponse<TEntity>> SearchWithPagination(Expression<Func<TEntity, bool>> predicate, int pageNumber, int pageSize, CancellationToken ct = default);
         Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
         Task<int> SaveChanges(CancellationToken ct = default);
     }

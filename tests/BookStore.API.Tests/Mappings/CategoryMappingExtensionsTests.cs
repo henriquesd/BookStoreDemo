@@ -143,7 +143,7 @@ namespace BookStore.API.Tests.Mappings
             {
                 // Arrange
                 var category = _fixture.Create<Category>();
-                var operationResult = new OperationResult<Category>(category, true, "Success");
+                var operationResult = OperationResult<Category>.SuccessResult(category);
 
                 // Act
                 var dto = operationResult.ToDto();
@@ -161,7 +161,7 @@ namespace BookStore.API.Tests.Mappings
             public void OperationResultCategory_ToDto_WithNullPayload_ShouldMapCorrectly()
             {
                 // Arrange
-                var operationResult = new OperationResult<Category>(false, "Error message");
+                var operationResult = OperationResult<Category>.ValidationError("Error message");
 
                 // Act
                 var dto = operationResult.ToDto();
