@@ -8,21 +8,6 @@ namespace BookStore.Infrastructure.Repositories
 {
     public class BookRepository : Repository<Book>, IBookRepository
     {
-        public BookRepository(BookStoreDbContext context) : base(context) { }
-
-        /// <summary>
-        /// Creates a search predicate that searches across multiple book fields including category name.
-        /// </summary>
-        /// <param name="searchValue">The value to search for</param>
-        /// <returns>An expression that can be used in LINQ queries</returns>
-        private static Expression<Func<Book, bool>> CreateSearchPredicate(string searchValue)
-        {
-            return b => b.Name.Contains(searchValue) ||
-                        b.Author.Contains(searchValue) ||
-                        (b.Description != null && b.Description.Contains(searchValue)) ||
-                        (b.Category != null && b.Category.Name.Contains(searchValue));
-        }
-
         public override async Task<IEnumerable<Book>> GetAll(CancellationToken ct = default)
         {
             return await Db.Books
@@ -111,5 +96,21 @@ namespace BookStore.Infrastructure.Repositories
 
             return new PagedResponse<Book>(books, pageNumber, pageSize, totalRecords);
         }
+
+        public BookRepository(BookStoreDbContext context) : base(context) { }
+
+        /// <summary>
+        /// Creates a search predicate that searches across multiple book fields including category name.
+        /// </summary>
+        /// <param name="searchValue">The value to search for</param>
+        /// <returns>An expression that can be used in LINQ queries</returns>
+        private static Expression<Func<Book, bool>> CreateSearchPredicate(string searchValue)
+        {
+            return b => b.Name.Contains(searchValue) ||
+                        b.Author.Contains(searchValue) ||
+                        (b.Description != null && b.Description.Contains(searchValue)) ||
+                        (b.Category != null && b.Category.Name.Contains(searchValue));
+        }
+
     }
 }

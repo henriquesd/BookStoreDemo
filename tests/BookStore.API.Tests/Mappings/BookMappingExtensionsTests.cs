@@ -91,7 +91,8 @@ namespace BookStore.API.Tests.Mappings
             public void Book_ToDto_ShouldMapCorrectly()
             {
                 // Arrange
-                var model = _fixture.Build<Book>()
+                var model = _fixture
+                    .Build<Book>()
                     .With(b => b.Category, _fixture.Create<Category>())
                     .Create();
 
@@ -114,7 +115,8 @@ namespace BookStore.API.Tests.Mappings
             public void Book_ToDto_WithNullCategory_ShouldMapCorrectly()
             {
                 // Arrange
-                var model = _fixture.Build<Book>()
+                var model = _fixture
+                    .Build<Book>()
                     .Without(b => b.Category)
                     .Create();
 
@@ -144,7 +146,8 @@ namespace BookStore.API.Tests.Mappings
             public void BookList_ToDto_ShouldMapCorrectly()
             {
                 // Arrange
-                var models = _fixture.Build<Book>()
+                var models = _fixture
+                    .Build<Book>()
                     .With(b => b.Category, _fixture.Create<Category>())
                     .CreateMany(3)
                     .ToList();
@@ -177,7 +180,8 @@ namespace BookStore.API.Tests.Mappings
             public void OperationResultBook_ToDto_ShouldMapCorrectly()
             {
                 // Arrange
-                var book = _fixture.Build<Book>()
+                var book = _fixture
+                    .Build<Book>()
                     .With(b => b.Category, _fixture.Create<Category>())
                     .Create();
                 var operationResult = OperationResult<Book>.SuccessResult(book);

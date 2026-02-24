@@ -239,7 +239,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_AddCategory_When_CategoryIsValid()
         {
             // Arrange
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Name, "Valid Category Name")
                 .Create();
             _categoryRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
@@ -274,7 +275,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_ReturnValidationError_When_CategoryNameIsInvalid(string? invalidName)
         {
             // Arrange
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Name, invalidName!)
                 .Create();
 
@@ -292,7 +294,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_ReturnDuplicateError_When_CategoryNameAlreadyExists()
         {
             // Arrange
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Name, "Existing Category")
                 .Create();
             _categoryRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
@@ -311,7 +314,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_CallRepositoryAdd_When_CategoryIsValid()
         {
             // Arrange
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Name, "Valid Category")
                 .Create();
             _categoryRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
@@ -327,7 +331,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_ThrowException_When_RepositoryThrowsException()
         {
             // Arrange
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Name, "Valid Category")
                 .Create();
             var exceptionMessage = "Database error";
@@ -346,7 +351,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_UpdateCategory_When_CategoryIsValid()
         {
             // Arrange
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Id, 1)
                 .With(c => c.Name, "Updated Category")
                 .Create();
@@ -383,7 +389,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_ReturnValidationError_When_CategoryNameIsInvalid(string? invalidName)
         {
             // Arrange
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Id, 1)
                 .With(c => c.Name, invalidName!)
                 .Create();
@@ -405,7 +412,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_ReturnValidationError_When_CategoryIdIsInvalid(int invalidId)
         {
             // Arrange
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Id, invalidId)
                 .With(c => c.Name, "Valid Name")
                 .Create();
@@ -444,7 +452,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_ReturnDuplicateError_When_CategoryNameExistsForDifferentCategory()
         {
             // Arrange
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Id, 1)
                 .With(c => c.Name, "Duplicate Name")
                 .Create();
@@ -505,7 +514,8 @@ namespace BookStore.Domain.Tests
         {
             // Arrange
             var categoryId = 1;
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Id, categoryId)
                 .Create();
             _categoryRepositoryMock.GetById(categoryId, Arg.Any<CancellationToken>()).Returns(category);
@@ -559,7 +569,8 @@ namespace BookStore.Domain.Tests
         {
             // Arrange
             var categoryId = 1;
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Id, categoryId)
                 .Create();
             _categoryRepositoryMock.GetById(categoryId, Arg.Any<CancellationToken>()).Returns(category);
@@ -580,7 +591,8 @@ namespace BookStore.Domain.Tests
         {
             // Arrange
             var categoryId = 1;
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Id, categoryId)
                 .Create();
             _categoryRepositoryMock.GetById(categoryId, Arg.Any<CancellationToken>()).Returns(category);
@@ -598,7 +610,8 @@ namespace BookStore.Domain.Tests
         {
             // Arrange
             var categoryId = 1;
-            var category = _fixture.Build<Category>()
+            var category = _fixture
+                .Build<Category>()
                 .With(c => c.Id, categoryId)
                 .Create();
             var exceptionMessage = "Database error";
@@ -619,7 +632,8 @@ namespace BookStore.Domain.Tests
         {
             // Arrange
             var searchTerm = "Fiction";
-            var categories = _fixture.Build<Category>()
+            var categories = _fixture
+                .Build<Category>()
                 .With(c => c.Name, $"{searchTerm} Category")
                 .CreateMany(2)
                 .ToList();

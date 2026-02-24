@@ -384,7 +384,8 @@ namespace BookStore.API.Tests
         {
             // Arrange
             var categoryId = _fixture.Create<int>();
-            var books = _fixture.Build<Book>()
+            var books = _fixture
+                .Build<Book>()
                 .With(b => b.CategoryId, categoryId)
                 .CreateMany(3)
                 .ToList();

@@ -194,7 +194,8 @@ namespace BookStore.Infrastructure.Tests
             public async Task ShouldAddCategoryWithCorrectValues_WhenCategoryIsValid()
             {
                 // Arrange
-                var categoryToAdd = _fixture.Build<Category>()
+                var categoryToAdd = _fixture
+                    .Build<Category>()
                     .With(c => c.Id, 100)
                     .Create();
 

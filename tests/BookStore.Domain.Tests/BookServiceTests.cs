@@ -240,7 +240,8 @@ namespace BookStore.Domain.Tests
         {
             // Arrange
             var categoryId = 1;
-            var books = _fixture.Build<Book>()
+            var books = _fixture
+                .Build<Book>()
                 .With(b => b.CategoryId, categoryId)
                 .CreateMany(3)
                 .ToList();
@@ -302,7 +303,8 @@ namespace BookStore.Domain.Tests
         {
             // Arrange
             var searchTerm = "Clean Code";
-            var books = _fixture.Build<Book>()
+            var books = _fixture
+                .Build<Book>()
                 .With(b => b.Name, searchTerm)
                 .CreateMany(2)
                 .ToList();
@@ -442,7 +444,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_AddBook_When_BookIsValid()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Name, "Clean Code")
                 .With(b => b.CategoryId, 1)
                 .Create();
@@ -479,7 +482,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_ReturnValidationError_When_BookNameIsInvalid(string? invalidName)
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Name, invalidName!)
                 .Create();
 
@@ -497,7 +501,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_ReturnNotFound_When_CategoryDoesNotExist()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Name, "Valid Book Name")
                 .With(b => b.CategoryId, 999)
                 .Create();
@@ -517,7 +522,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_ReturnDuplicateError_When_BookNameAlreadyExists()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Name, "Existing Book")
                 .Create();
             _categoryRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
@@ -537,7 +543,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_CallRepositoryAdd_When_BookIsValid()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Name, "Valid Book")
                 .Create();
             _categoryRepositoryMock.ExistsAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>()).Returns(true);
@@ -554,7 +561,8 @@ namespace BookStore.Domain.Tests
         public async Task Add_Should_ThrowException_When_RepositoryThrowsException()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Name, "Valid Book")
                 .Create();
             var exceptionMessage = "Database error";
@@ -574,7 +582,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_UpdateBook_When_BookIsValid()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, 1)
                 .With(b => b.Name, "Updated Book")
                 .Create();
@@ -612,7 +621,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_ReturnValidationError_When_BookNameIsInvalid(string? invalidName)
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, 1)
                 .With(b => b.Name, invalidName!)
                 .Create();
@@ -634,7 +644,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_ReturnValidationError_When_BookIdIsInvalid(int invalidId)
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, invalidId)
                 .With(b => b.Name, "Valid Name")
                 .Create();
@@ -653,7 +664,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_ReturnNotFound_When_BookDoesNotExist()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, 1)
                 .With(b => b.Name, "Valid Book")
                 .Create();
@@ -673,7 +685,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_ReturnNotFound_When_CategoryDoesNotExist()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, 1)
                 .With(b => b.Name, "Valid Book")
                 .With(b => b.CategoryId, 999)
@@ -695,7 +708,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_ReturnDuplicateError_When_BookNameExistsForDifferentBook()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, 1)
                 .With(b => b.Name, "Duplicate Name")
                 .Create();
@@ -717,7 +731,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_CallRepositoryUpdate_When_BookIsValid()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, 1)
                 .With(b => b.Name, "Valid Book")
                 .Create();
@@ -736,7 +751,8 @@ namespace BookStore.Domain.Tests
         public async Task Update_Should_ThrowException_When_RepositoryThrowsException()
         {
             // Arrange
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, 1)
                 .With(b => b.Name, "Valid Book")
                 .Create();
@@ -759,7 +775,8 @@ namespace BookStore.Domain.Tests
         {
             // Arrange
             var bookId = 1;
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, bookId)
                 .Create();
             _bookRepositoryMock.GetById(bookId, Arg.Any<CancellationToken>()).Returns(book);
@@ -812,7 +829,8 @@ namespace BookStore.Domain.Tests
         {
             // Arrange
             var bookId = 1;
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, bookId)
                 .Create();
             _bookRepositoryMock.GetById(bookId, Arg.Any<CancellationToken>()).Returns(book);
@@ -829,7 +847,8 @@ namespace BookStore.Domain.Tests
         {
             // Arrange
             var bookId = 1;
-            var book = _fixture.Build<Book>()
+            var book = _fixture
+                .Build<Book>()
                 .With(b => b.Id, bookId)
                 .Create();
             var exceptionMessage = "Database error";
