@@ -1,6 +1,8 @@
-﻿using BookStore.Domain.Models;
+using AutoFixture;
+using BookStore.Domain.Models;
 using BookStore.Infrastructure.Context;
 using BookStore.Infrastructure.Repositories;
+using BookStore.Infrastructure.Tests.Helpers;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -12,377 +14,308 @@ namespace BookStore.Infrastructure.Tests
         public abstract class BookRepositoryTestsBase
         {
             protected readonly DbContextOptions<BookStoreDbContext> _options;
+            protected readonly Fixture _fixture;
 
             protected BookRepositoryTestsBase()
             {
-                // Use this when using a SQLite InMemory database
                 _options = BookStoreHelperTests.BookStoreDbContextOptionsSQLiteInMemory();
                 BookStoreHelperTests.CreateDataBaseSQLiteInMemory(_options);
-
-                // Use this when using a EF Core InMemory database
-                //_options = BookStoreHelperTests.BookStoreDbContextOptionsEfCoreInMemory();
-                //BookStoreHelperTests.CreateDataBaseEfCoreInMemory(_options);
-            }
-
-            protected List<Book> CreateBookList()
-            {
-                return new List<Book>()
-                {
-                    new Book()
-                    {
-                        Id = 1,
-                        Name = "Book Test 1",
-                        Author = "Author Test 1",
-                        Description = "Description Test 1",
-                        Value = 10,
-                        CategoryId = 1,
-                        PublishDate = new DateTime(2020, 1, 1, 0, 0, 0, 0),
-                        Category = new Category()
-                        {
-                            Id = 1,
-                            Name = "Category Test 1"
-                        }
-                    },
-                    new Book()
-                    {
-                        Id = 2,
-                        Name = "Book Test 2",
-                        Author = "Author Test 2",
-                        Description = "Description Test 2",
-                        Value = 20,
-                        CategoryId = 1,
-                        PublishDate = new DateTime(2020, 2, 2, 0, 0, 0, 0),
-                        Category = new Category()
-                        {
-                            Id = 1,
-                            Name = "Category Test 1"
-                        }
-                    },
-                    new Book()
-                    {
-                        Id = 3,
-                        Name = "Book Test 3",
-                        Author = "Author Test 3",
-                        Description = "Description Test 3",
-                        Value = 30,
-                        CategoryId = 3,
-                        PublishDate = new DateTime(2020, 3, 3, 0, 0, 0, 0),
-                        Category = new Category()
-                        {
-                            Id = 3,
-                            Name = "Category Test 3"
-                        }
-                    }
-                };
+                _fixture = FixtureFactory.Create();
             }
         }
 
         public class GetAll : BookRepositoryTestsBase
         {
             [Fact]
-            public async void ShouldReturnAListOfBook_WhenBooksExist()
+            public async Task ShouldReturnAListOfBook_WhenBooksExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var books = await bookRepository.GetAll();
+                // Arrange
+                var bookRepository = new BookRepository(context);
 
-                    // Assert
-                    books.Should().NotBeNull();
-                    books.Should().BeOfType<List<Book>>();
-                }
+                // Act
+                var books = await bookRepository.GetAll();
+
+                // Assert
+                books.Should().NotBeNull();
+                books.Should().BeOfType<List<Book>>();
+                books.Should().HaveCount(3);
             }
 
             [Fact]
-            public async void ShouldReturnAnEmptyList_WhenBooksDoNotExist()
+            public async Task ShouldReturnAnEmptyList_WhenBooksDoNotExist()
             {
+                // Arrange
                 await BookStoreHelperTests.CleanDataBase(_options);
+                await using var context = new BookStoreDbContext(_options);
+                var bookRepository = new BookRepository(context);
 
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
+                // Act
+                var books = await bookRepository.GetAll();
 
-                    // Act
-                    var books = await bookRepository.GetAll();
-
-                    // Assert
-                    books.Should().NotBeNull();
-                    books.Should().BeEmpty();
-                    books.Should().BeOfType<List<Book>>();
-                }
+                // Assert
+                books.Should().NotBeNull();
+                books.Should().BeEmpty();
+                books.Should().BeOfType<List<Book>>();
             }
 
             [Fact]
-            public async void ShouldReturnAListOfBookWithCorrectValues_WhenBooksExist()
+            public async Task ShouldReturnAListOfBookWithCorrectValues_WhenBooksExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
+                await using var context = new BookStoreDbContext(_options);
+
+                // Arrange
+                var bookRepository = new BookRepository(context);
+
+                // Act
+                var bookList = await bookRepository.GetAll();
+
+                // Assert
+                bookList.Should().NotBeNull();
+                bookList.Count().Should().Be(3);
+                bookList.Should().AllSatisfy(b =>
                 {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
-
-                    var expectedBooks = CreateBookList();
-
-                    // Act
-                    var bookList = await bookRepository.GetAll();
-
-                    // Assert
-                    bookList.Should().NotBeNull();
-                    bookList.Count().Should().Be(3);
-                    bookList.Should().BeEquivalentTo(expectedBooks, options =>
-                        options.Excluding(x => x.Category.Books));
-                }
+                    b.Name.Should().StartWith("Book Test");
+                    b.Author.Should().StartWith("Author Test");
+                });
             }
         }
 
         public class GetAllWithPagination : BookRepositoryTestsBase
         {
             [Fact]
-            public async void ShouldReturnAListOfPaginatedBook_WhenBooksExist()
+            public async Task ShouldReturnAListOfPaginatedBook_WhenBooksExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var pagedResponse = await bookRepository.GetAllWithPagination(1, 10);
+                // Arrange
+                var bookRepository = new BookRepository(context);
+                var pageNumber = 1;
+                var pageSize = 10;
 
-                    // Assert
-                    pagedResponse.Should().NotBeNull();
-                    pagedResponse.Should().BeOfType<PagedResponse<Book>>();
-                }
+                // Act
+                var pagedResponse = await bookRepository.GetAllWithPagination(pageNumber, pageSize);
+
+                // Assert
+                pagedResponse.Should().NotBeNull();
+                pagedResponse.Should().BeOfType<PagedResponse<Book>>();
+                pagedResponse.PageNumber.Should().Be(pageNumber);
+                pagedResponse.PageSize.Should().Be(pageSize);
             }
 
             [Fact]
-            public async void ShouldReturnAnEmptyList_WhenBooksDoNotExist()
+            public async Task ShouldReturnAnEmptyList_WhenBooksDoNotExist()
             {
+                // Arrange
                 await BookStoreHelperTests.CleanDataBase(_options);
+                await using var context = new BookStoreDbContext(_options);
+                var bookRepository = new BookRepository(context);
 
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
+                // Act
+                var pagedResponse = await bookRepository.GetAllWithPagination(1, 10);
 
-                    // Act
-                    var pagedResponse = await bookRepository.GetAllWithPagination(1, 10);
-
-                    // Assert
-                    pagedResponse.Should().NotBeNull();
-                    pagedResponse.Data.Should().BeEmpty();
-                    pagedResponse.Should().BeOfType<PagedResponse<Book>>();
-                }
+                // Assert
+                pagedResponse.Should().NotBeNull();
+                pagedResponse.Data.Should().BeEmpty();
+                pagedResponse.Should().BeOfType<PagedResponse<Book>>();
             }
 
             [Fact]
-            public async void ShouldReturnPagedResponseOfBookWithCorrectValues_WhenBooksExist()
+            public async Task ShouldReturnPagedResponseOfBookWithCorrectValues_WhenBooksExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
+                await using var context = new BookStoreDbContext(_options);
+
+                // Arrange
+                var bookRepository = new BookRepository(context);
+
+                // Act
+                var pagedResponse = await bookRepository.GetAllWithPagination(1, 10);
+
+                // Assert
+                pagedResponse.Should().NotBeNull();
+                pagedResponse.Should().BeOfType<PagedResponse<Book>>();
+                pagedResponse.Data.Count().Should().Be(3);
+                pagedResponse.Data.Should().AllSatisfy(b =>
                 {
-                    // Arrange
-                    var expectedBooks = CreateBookList();
-                    var bookRepository = new BookRepository(context);
-
-                    // Act
-                    var pagedResponse = await bookRepository.GetAllWithPagination(1, 10);
-
-                    // Assert
-                    pagedResponse.Should().NotBeNull();
-                    pagedResponse.Should().BeOfType<PagedResponse<Book>>();
-                    pagedResponse.Data.Count().Should().Be(3);
-                    pagedResponse.Data.Should().BeEquivalentTo(expectedBooks, options => options
-                        .Excluding(book => book.Category.Books)
-                        .IncludingNestedObjects()
-                    );
-                }
+                    b.Name.Should().StartWith("Book Test");
+                });
             }
         }
 
         public class GetById : BookRepositoryTestsBase
         {
             [Fact]
-            public async void ShouldReturnBookWithSearchedId_WhenBookWithSearchedIdExist()
+            public async Task ShouldReturnBookWithSearchedId_WhenBookWithSearchedIdExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var book = await bookRepository.GetById(2);
+                // Arrange
+                var bookRepository = new BookRepository(context);
+                var existingBookId = 2;
 
-                    // Assert
-                    book.Should().NotBeNull();
-                    book.Should().BeOfType<Book>();
-                }
+                // Act
+                var book = await bookRepository.GetById(existingBookId);
+
+                // Assert
+                book.Should().NotBeNull();
+                book.Should().BeOfType<Book>();
+                book!.Id.Should().Be(existingBookId);
             }
 
             [Fact]
-            public async void ShouldReturnNull_WhenBookWithSearchedIdDoesNotExist()
+            public async Task ShouldReturnNull_WhenBookWithSearchedIdDoesNotExist()
             {
+                // Arrange
                 await BookStoreHelperTests.CleanDataBase(_options);
+                await using var context = new BookStoreDbContext(_options);
+                var bookRepository = new BookRepository(context);
+                var nonExistentBookId = _fixture.Create<int>();
 
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
+                // Act
+                var book = await bookRepository.GetById(nonExistentBookId);
 
-                    // Act
-                    var book = await bookRepository.GetById(1);
-
-                    // Assert
-                    book.Should().BeNull();
-                }
+                // Assert
+                book.Should().BeNull();
             }
 
             [Fact]
-            public async void ShouldReturnBookWithCorrectValues_WhenBookExist()
+            public async Task ShouldReturnBookWithCorrectValues_WhenBookExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
-                    var expectedBooks = CreateBookList();
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var book = await bookRepository.GetById(2);
+                // Arrange
+                var bookRepository = new BookRepository(context);
+                var existingBookId = 2;
 
-                    // Assert
-                    book.Should().BeEquivalentTo(expectedBooks[1], options =>
-                       options.Excluding(x => x.Category.Books));
-                }
+                // Act
+                var book = await bookRepository.GetById(existingBookId);
+
+                // Assert
+                book.Should().NotBeNull();
+                book!.Id.Should().Be(existingBookId);
+                book.Name.Should().Be("Book Test 2");
+                book.Author.Should().Be("Author Test 2");
             }
         }
 
         public class GetBooksByCategory : BookRepositoryTestsBase
         {
             [Fact]
-            public async void ShouldReturnAListOfBook_WhenBooksWithSearchedCategoryExist()
+            public async Task ShouldReturnAListOfBook_WhenBooksWithSearchedCategoryExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var books = await bookRepository.GetBooksByCategory(1);
+                // Arrange
+                var bookRepository = new BookRepository(context);
+                var categoryId = 1;
 
-                    // Assert
-                    books.Should().NotBeNull();
-                    books.Should().BeOfType<List<Book>>();
-                }
+                // Act
+                var books = await bookRepository.GetBooksByCategory(categoryId);
+
+                // Assert
+                books.Should().NotBeNull();
+                books.Should().BeOfType<List<Book>>();
+                books.Should().HaveCount(2);
             }
 
             [Fact]
-            public async void ShouldReturnAnEmptyList_WhenNoBooksWithSearchedCategoryExist()
+            public async Task ShouldReturnAnEmptyList_WhenNoBooksWithSearchedCategoryExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var books = await bookRepository.GetBooksByCategory(4);
-                    var bookList = books as List<Book>;
+                // Arrange
+                var bookRepository = new BookRepository(context);
+                var nonExistentCategoryId = 999;
 
-                    // Assert
-                    bookList.Should().NotBeNull();
-                    bookList.Should().BeEmpty();
-                    bookList.Should().BeOfType<List<Book>>();
-                }
+                // Act
+                var books = await bookRepository.GetBooksByCategory(nonExistentCategoryId);
+                var bookList = books as List<Book>;
+
+                // Assert
+                bookList.Should().NotBeNull();
+                bookList.Should().BeEmpty();
+                bookList.Should().BeOfType<List<Book>>();
             }
 
             [Fact]
-            public async void ShouldReturnAListOfBookWithSearchedCategory_WhenBooksWithSearchedCategoryExist()
+            public async Task ShouldReturnAListOfBookWithSearchedCategory_WhenBooksWithSearchedCategoryExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    var expectedBooks = CreateBookList();
-                    var expectedBooksWithCategory = expectedBooks.Where(b => b.Category.Id == 1).ToList();
+                // Arrange
+                var bookRepository = new BookRepository(context);
+                var categoryId = 1;
 
-                    // Act
-                    var books = await bookRepository.GetBooksByCategory(1);
-                    var bookList = books as List<Book>;
+                // Act
+                var books = await bookRepository.GetBooksByCategory(categoryId);
+                var bookList = books as List<Book>;
 
-                    // Assert
-                    bookList.Should().NotBeNull();
-                    bookList.Count().Should().Be(2);
-                    bookList.Should().BeEquivalentTo(expectedBooksWithCategory, options =>
-                      options.Excluding(x => x.Category));
-                }
+                // Assert
+                bookList.Should().NotBeNull();
+                bookList!.Count().Should().Be(2);
+                bookList.Should().AllSatisfy(b => b.CategoryId.Should().Be(categoryId));
             }
         }
 
         public class SearchBookWithCategory : BookRepositoryTestsBase
         {
             [Fact]
-            public async void ShouldReturnOneBook_WhenOneBookWithSearchedValueExist()
+            public async Task ShouldReturnOneBook_WhenOneBookWithSearchedValueExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
-                    var expectedBook = CreateBookList();
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var books = await bookRepository.SearchBookWithCategory(expectedBook[1].Name);
-                    var bookList = books as List<Book>;
+                // Arrange
+                var bookRepository = new BookRepository(context);
+                var searchTerm = "Book Test 2";
 
-                    // Assert
-                    bookList.Should().NotBeNull();
-                    bookList.Should().BeOfType<List<Book>>();
-                    bookList.Count().Should().Be(1);
-                    bookList.FirstOrDefault().Should().BeEquivalentTo(expectedBook[1], options =>
-                      options.Excluding(x => x.Category.Books));
-                }
+                // Act
+                var books = await bookRepository.SearchBookWithCategory(searchTerm);
+                var bookList = books as List<Book>;
+
+                // Assert
+                bookList.Should().NotBeNull();
+                bookList.Should().BeOfType<List<Book>>();
+                bookList!.Count().Should().Be(1);
+                bookList.First().Name.Should().Be(searchTerm);
             }
 
             [Fact]
-            public async void ShouldReturnAListOfBook_WhenBookWithSearchedValueExist()
+            public async Task ShouldReturnAListOfBook_WhenBookWithSearchedValueExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
-                    var expectedBooks = CreateBookList();
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var books = await bookRepository.SearchBookWithCategory("Book Test");
-                    var bookList = books as List<Book>;
+                // Arrange
+                var bookRepository = new BookRepository(context);
+                var searchTerm = "Book Test";
 
-                    // Assert
-                    bookList.Should().NotBeNull();
-                    bookList.Should().BeOfType<List<Book>>();
-                    bookList.Count().Should().Be(expectedBooks.Count);
-                    bookList.Should().BeEquivalentTo(expectedBooks, options =>
-                      options.Excluding(x => x.Category.Books));
+                // Act
+                var books = await bookRepository.SearchBookWithCategory(searchTerm);
+                var bookList = books as List<Book>;
 
-                }
+                // Assert
+                bookList.Should().NotBeNull();
+                bookList.Should().BeOfType<List<Book>>();
+                bookList!.Count().Should().Be(3);
             }
 
             [Fact]
-            public async void ShouldReturnAnEmptyList_WhenNoBooksWithSearchedValueExist()
+            public async Task ShouldReturnAnEmptyList_WhenNoBooksWithSearchedValueExist()
             {
-                await using (var context = new BookStoreDbContext(_options))
-                {
-                    // Arrange
-                    var bookRepository = new BookRepository(context);
+                await using var context = new BookStoreDbContext(_options);
 
-                    // Act
-                    var books = await bookRepository.SearchBookWithCategory("Testt");
-                    var bookList = books as List<Book>;
+                // Arrange
+                var bookRepository = new BookRepository(context);
+                var searchTerm = _fixture.Create<string>();
 
-                    // Assert
-                    bookList.Should().NotBeNull();
-                    bookList.Should().BeEmpty();
-                    bookList.Should().BeOfType<List<Book>>();
-                }
+                // Act
+                var books = await bookRepository.SearchBookWithCategory(searchTerm);
+                var bookList = books as List<Book>;
+
+                // Assert
+                bookList.Should().NotBeNull();
+                bookList.Should().BeEmpty();
+                bookList.Should().BeOfType<List<Book>>();
             }
         }
     }

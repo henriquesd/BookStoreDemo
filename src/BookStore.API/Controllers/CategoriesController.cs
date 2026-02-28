@@ -1,125 +1,145 @@
-﻿using AutoMapper;
-using BookStore.API.Dtos;
-using BookStore.API.Dtos.Category;
-using BookStore.Domain.Interfaces;
-using BookStore.Domain.Models;
-using Microsoft.AspNetCore.Mvc;
-
 namespace BookStore.API.Controllers
 {
+    [ApiController]
     [Route("api/[controller]")]
-    public class CategoriesController : MainController
+    public class CategoriesController(ICategoryService categoryService) : ControllerBase
     {
-        private readonly ICategoryService _categoryService;
-        private readonly IMapper _mapper;
-
-        public CategoriesController(IMapper mapper,
-            ICategoryService categoryService)
-        {
-            _mapper = mapper;
-            _categoryService = categoryService;
-        }
-
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll()
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetAll(CancellationToken ct = default)
         {
-            var categories = await _categoryService.GetAll();
+            var result = await categoryService.GetAll(ct);
 
-            var categoryResultDtoList = _mapper.Map<IEnumerable<CategoryResultDto>>(categories);
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
 
+            var categoryResultDtoList = result.Payload!.ToDto();
             return Ok(categoryResultDtoList);
         }
 
-        [HttpGet("GetAllWithPagination")]
+        [HttpGet("pagination")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetAllWithPagination(
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10,
+            CancellationToken ct = default)
         {
-            if (pageNumber <= 0 || pageSize <= 0) return BadRequest();
+            var result = await categoryService.GetAllWithPagination(pageNumber, pageSize, ct);
 
-            var paginatedCategories = await _categoryService.GetAllWithPagination(pageNumber, pageSize);
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
 
-            var categoriesResultDto = _mapper.Map<PagedResponseDto<CategoryResultDto>>(paginatedCategories);
-
+            var categoriesResultDto = result.Payload!.ToDto(c => c.ToDto());
             return Ok(categoriesResultDto);
         }
 
         [HttpGet("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById(int id)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetById(int id, CancellationToken ct = default)
         {
-            var category = await _categoryService.GetById(id);
+            var result = await categoryService.GetById(id, ct);
 
-            if (category == null) return NotFound();
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
 
-            var categoryResultDto = _mapper.Map<CategoryResultDto>(category);
-
+            var categoryResultDto = result.Payload!.ToDto();
             return Ok(categoryResultDto);
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(OperationResult<CategoryResultDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(OperationResult<CategoryResultDto>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Add(CategoryAddDto categoryDto)
+        [ProducesResponseType(typeof(CategoryResultDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Add(CategoryAddDto categoryDto, CancellationToken ct = default)
         {
-            if (!ModelState.IsValid) return BadRequest();
+            var category = categoryDto.ToModel();
+            var categoryResult = await categoryService.Add(category, ct);
 
-            var category = _mapper.Map<Category>(categoryDto);
-            var categoryResult = await _categoryService.Add(category);
-            
-            var result = _mapper.Map<OperationResult<CategoryResultDto>>(categoryResult);
+            if (!categoryResult.Success)
+            {
+                return categoryResult.ToActionResult();
+            }
 
-            if (!result.Success) return BadRequest(result);
-
-            return Ok(result);
+            var categoryResultDto = categoryResult.Payload!.ToDto();
+            return CreatedAtAction(nameof(GetById), new { id = categoryResultDto.Id }, categoryResultDto);
         }
 
         [HttpPut("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CategoryResultDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Update(int id, CategoryEditDto categoryDto)
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Update(int id, CategoryEditDto categoryDto, CancellationToken ct = default)
         {
-            if (id != categoryDto.Id) return BadRequest();
-            if (!ModelState.IsValid) return BadRequest();
+            if (id != categoryDto.Id)
+            {
+                return BadRequest(new ErrorResponse("ID mismatch"));
+            }
 
-            var category = _mapper.Map<Category>(categoryDto);
-            
-            var categoryResult = await _categoryService.Update(category);
+            var category = categoryDto.ToModel();
+            var categoryResult = await categoryService.Update(category, ct);
 
-            var result = _mapper.Map<OperationResult<CategoryResultDto>>(categoryResult);
+            if (!categoryResult.Success)
+            {
+                return categoryResult.ToActionResult();
+            }
 
-            if (!result.Success) return BadRequest(result);
-
-            return Ok(result);
+            var categoryResultDto = categoryResult.Payload!.ToDto();
+            return Ok(categoryResultDto);
         }
 
         [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Remove(int id)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Remove(int id, CancellationToken ct = default)
         {
-            var category = await _categoryService.GetById(id);
-            if (category == null) return NotFound();
-
-            var result = await _categoryService.Remove(category);
-
-            if (!result) return BadRequest();
-
-            return NoContent();
+            var result = await categoryService.Remove(id, ct);
+            return result.ToActionResult();
         }
 
-        [HttpGet]
-        [Route("search/{category}")]
+        [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<List<Category>>> Search(string category)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Search([FromQuery] string q, CancellationToken ct = default)
         {
-            var categories = await _categoryService.Search(category);
+            var result = await categoryService.Search(q, ct);
 
-            if (!categories.Any()) return NotFound("None category was founded");
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
 
-            return Ok(categories);
+            var categoriesResultDto = result.Payload!.ToDto();
+            return Ok(categoriesResultDto);
+        }
+
+        [HttpGet("search/pagination")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SearchWithPagination(
+            [FromQuery] string q,
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            var result = await categoryService.SearchWithPagination(q, pageNumber, pageSize, ct);
+
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
+
+            var categoriesResultDto = result.Payload!.ToDto(c => c.ToDto());
+            return Ok(categoriesResultDto);
         }
     }
 }

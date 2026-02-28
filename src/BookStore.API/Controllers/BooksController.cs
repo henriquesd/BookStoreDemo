@@ -1,138 +1,197 @@
-﻿using AutoMapper;
-using BookStore.API.Dtos;
-using BookStore.API.Dtos.Book;
-using BookStore.Domain.Interfaces;
-using BookStore.Domain.Models;
-using Microsoft.AspNetCore.Mvc;
-
 namespace BookStore.API.Controllers
 {
+    [ApiController]
     [Route("api/[controller]")]
-    public class BooksController : MainController
+    public class BooksController(IBookService bookService) : ControllerBase
     {
-        private readonly IBookService _bookService;
-        private readonly IMapper _mapper;
-
-        public BooksController(IMapper mapper,
-                                IBookService bookService)
-        {
-            _mapper = mapper;
-            _bookService = bookService;
-        }
-
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll()
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetAll(CancellationToken ct = default)
         {
-            var books = await _bookService.GetAll();
+            var result = await bookService.GetAll(ct);
 
-            return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
+
+            var booksResultDto = result.Payload!.ToDto();
+            return Ok(booksResultDto);
         }
 
-        [HttpGet("GetAllWithPagination")]
+        [HttpGet("pagination")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllWithPagination(int pageNumber = 1, int pageSize = 10)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetAllWithPagination(
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10,
+            CancellationToken ct = default)
         {
-            if (pageNumber <= 0 || pageSize <= 0) return BadRequest();
+            var result = await bookService.GetAllWithPagination(pageNumber, pageSize, ct);
 
-            var paginatedBooks = await _bookService.GetAllWithPagination(pageNumber, pageSize);
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
 
-            var booksResultDto = _mapper.Map<PagedResponseDto<BookResultDto>>(paginatedBooks);
-
+            var booksResultDto = result.Payload!.ToDto(b => b.ToDto());
             return Ok(booksResultDto);
         }
 
         [HttpGet("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById(int id)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetById(int id, CancellationToken ct = default)
         {
-            var book = await _bookService.GetById(id);
+            var result = await bookService.GetById(id, ct);
 
-            if (book == null) return NotFound();
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
 
-            return Ok(_mapper.Map<BookResultDto>(book));
+            var bookResultDto = result.Payload!.ToDto();
+            return Ok(bookResultDto);
         }
 
-        [HttpGet]
-        [Route("get-books-by-category/{categoryId:int}")]
+        [HttpGet("categories/{categoryId:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetBooksByCategory(int categoryId)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetBooksByCategory(int categoryId, CancellationToken ct = default)
         {
-            var books = await _bookService.GetBooksByCategory(categoryId);
+            var result = await bookService.GetBooksByCategory(categoryId, ct);
 
-            if (!books.Any()) return NotFound();
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
 
-            return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
+            var booksResultDto = result.Payload!.ToDto();
+            return Ok(booksResultDto);
         }
 
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(BookResultDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Add(BookAddDto bookDto)
+        public async Task<IActionResult> Add(BookAddDto bookDto, CancellationToken ct = default)
         {
-            if (!ModelState.IsValid) return BadRequest();
+            var book = bookDto.ToModel();
+            var bookResult = await bookService.Add(book, ct);
 
-            var book = _mapper.Map<Book>(bookDto);
-            var bookResult = await _bookService.Add(book);
+            if (!bookResult.Success)
+            {
+                return bookResult.ToActionResult();
+            }
 
-            if (bookResult == null) return BadRequest();
-
-            return Ok(_mapper.Map<BookResultDto>(bookResult));
+            var bookResultDto = bookResult.Payload!.ToDto();
+            return CreatedAtAction(nameof(GetById), new { id = bookResultDto.Id }, bookResultDto);
         }
 
         [HttpPut("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(BookResultDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Update(int id, BookEditDto bookDto)
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Update(int id, BookEditDto bookDto, CancellationToken ct = default)
         {
-            if (id != bookDto.Id) return BadRequest();
+            if (id != bookDto.Id)
+            {
+                return BadRequest(new ErrorResponse("ID mismatch"));
+            }
 
-            if (!ModelState.IsValid) return BadRequest();
+            var book = bookDto.ToModel();
+            var bookResult = await bookService.Update(book, ct);
 
-            await _bookService.Update(_mapper.Map<Book>(bookDto));
+            if (!bookResult.Success)
+            {
+                return bookResult.ToActionResult();
+            }
 
-            return Ok(bookDto);
+            var bookResultDto = bookResult.Payload!.ToDto();
+            return Ok(bookResultDto);
         }
 
         [HttpDelete("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Remove(int id)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Remove(int id, CancellationToken ct = default)
         {
-            var book = await _bookService.GetById(id);
-            if (book == null) return NotFound();
-
-            await _bookService.Remove(book);
-
-            return Ok();
+            var result = await bookService.Remove(id, ct);
+            return result.ToActionResult();
         }
 
-        [HttpGet]
-        [Route("search/{bookName}")]
+        [HttpGet("search")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<List<Book>>> Search(string bookName)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Search([FromQuery] string q, CancellationToken ct = default)
         {
-            var books = _mapper.Map<List<Book>>(await _bookService.Search(bookName));
+            var result = await bookService.Search(q, ct);
 
-            if (books == null || books.Count == 0) return NotFound("None book was founded");
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
 
-            return Ok(books);
+            var booksResultDto = result.Payload!.ToDto();
+            return Ok(booksResultDto);
         }
 
-        [HttpGet]
-        [Route("search-book-with-category/{searchedValue}")]
+        [HttpGet("search-with-category")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<List<Book>>> SearchBookWithCategory(string searchedValue)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SearchBookWithCategory([FromQuery] string q, CancellationToken ct = default)
         {
-            var books = _mapper.Map<List<Book>>(await _bookService.SearchBookWithCategory(searchedValue));
+            var result = await bookService.SearchBookWithCategory(q, ct);
 
-            if (!books.Any()) return NotFound("None book was founded");
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
 
-            return Ok(_mapper.Map<IEnumerable<BookResultDto>>(books));
+            var booksResultDto = result.Payload!.ToDto();
+            return Ok(booksResultDto);
+        }
+
+        [HttpGet("search/pagination")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SearchWithPagination(
+            [FromQuery] string q,
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            var result = await bookService.SearchWithPagination(q, pageNumber, pageSize, ct);
+
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
+
+            var booksResultDto = result.Payload!.ToDto(b => b.ToDto());
+            return Ok(booksResultDto);
+        }
+
+        [HttpGet("search-with-category/pagination")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SearchBookWithCategoryPagination(
+            [FromQuery] string q,
+            [Range(1, int.MaxValue)] int pageNumber = 1,
+            [Range(1, 100)] int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            var result = await bookService.SearchBookWithCategoryPagination(q, pageNumber, pageSize, ct);
+
+            if (!result.Success)
+            {
+                return result.ToActionResult();
+            }
+
+            var booksResultDto = result.Payload!.ToDto(b => b.ToDto());
+            return Ok(booksResultDto);
         }
     }
 }

@@ -1,4 +1,5 @@
 using BookStore.API.Configuration;
+using BookStore.API.Middleware;
 using BookStore.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,8 +9,6 @@ builder.Services.AddDbContext<BookStoreDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
-
-builder.Services.AddAutoMapper(typeof(Program));
 
 builder.Services.AddControllers();
 
@@ -22,6 +21,10 @@ builder.Services.AddCors();
 builder.Services.ResolveDependencies();
 
 var app = builder.Build();
+
+app.UseRequestLogging();
+
+app.UseGlobalExceptionHandler();
 
 app.ConfigureSwagger();
 
@@ -37,11 +40,9 @@ app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
 if (app.Environment.IsDevelopment())
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var databaseSeeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-        databaseSeeder.SeedData();
-    }
+    using var scope = app.Services.CreateScope();
+    var databaseSeeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+    await databaseSeeder.SeedDataAsync();
 }
 
 app.Run();

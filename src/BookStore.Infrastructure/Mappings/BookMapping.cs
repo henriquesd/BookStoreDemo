@@ -23,13 +23,17 @@ namespace BookStore.Infrastructure.Mappings
                 .HasColumnType("varchar(350)");
 
             builder.Property(b => b.Value)
-                .IsRequired();
+                .IsRequired()
+                .HasPrecision(18, 2);
 
             builder.Property(b => b.PublishDate)
                 .IsRequired();
 
             builder.Property(b => b.CategoryId)
                 .IsRequired();
+
+            builder.HasIndex(b => b.Name);
+            builder.HasIndex(b => b.CategoryId);
 
             builder.ToTable("Books");
         }

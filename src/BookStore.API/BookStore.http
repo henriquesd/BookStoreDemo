@@ -1,0 +1,255 @@
+@baseUrl = https://localhost:44382
+@contentType = application/json
+
+###############################################################################
+# BookStore API - HTTP Request Collection
+
+# Dynamic Variables:
+# {{$timestamp}}  - Unix timestamp
+###############################################################################
+
+###############################################################################
+# CATEGORIES API
+###############################################################################
+
+### Get All Categories
+GET {{baseUrl}}/api/categories
+Accept: {{contentType}}
+
+### Get Categories with Pagination
+GET {{baseUrl}}/api/categories/pagination?pageNumber=1&pageSize=10
+Accept: {{contentType}}
+
+### Get Categories with Pagination - Invalid Parameters (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/categories/pagination?pageNumber=0&pageSize=101
+Accept: {{contentType}}
+
+### Get Category by ID
+GET {{baseUrl}}/api/categories/1
+Accept: {{contentType}}
+
+### Get Category by ID - Not Found (ERROR TEST - Should return 404)
+GET {{baseUrl}}/api/categories/999
+Accept: {{contentType}}
+
+### Create Category
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": "Category_{{$timestamp}}"
+}
+
+### Create Category - Missing Name (ERROR TEST - Should return 400)
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+
+{
+  "name": ""
+}
+
+### Update Category (set ID manually after creating one)
+@updateCatId = 1
+PUT {{baseUrl}}/api/categories/{{updateCatId}}
+Content-Type: {{contentType}}
+
+{
+  "id": {{updateCatId}},
+  "name": "Updated_{{$timestamp}}"
+}
+
+### Update Category - ID Mismatch (ERROR TEST - Should return 400)
+PUT {{baseUrl}}/api/categories/1
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "name": "Mismatched ID Test"
+}
+
+### Update Category - Not Found (ERROR TEST - Should return 404)
+PUT {{baseUrl}}/api/categories/999
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "name": "Non-existent Category"
+}
+
+### Delete Category (set ID manually)
+@deleteCatId = 160
+DELETE {{baseUrl}}/api/categories/{{deleteCatId}}
+
+### Delete Category - Not Found (ERROR TEST - Should return 404)
+DELETE {{baseUrl}}/api/categories/999
+
+### Search Categories
+GET {{baseUrl}}/api/categories/search?q=fiction
+Accept: {{contentType}}
+
+### Search Categories - Empty Search Term (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/categories/search?q=
+Accept: {{contentType}}
+
+### Search Categories - No Results
+GET {{baseUrl}}/api/categories/search?q=XYZ999NOTFOUND
+Accept: {{contentType}}
+
+###############################################################################
+# BOOKS API
+###############################################################################
+
+### Get All Books
+GET {{baseUrl}}/api/books
+Accept: {{contentType}}
+
+### Get Books with Pagination
+GET {{baseUrl}}/api/books/pagination?pageNumber=1&pageSize=10
+Accept: {{contentType}}
+
+### Get Books with Pagination - Invalid Parameters (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/pagination?pageNumber=0&pageSize=0
+Accept: {{contentType}}
+
+### Get Books with Pagination - PageSize > 100 (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/pagination?pageNumber=1&pageSize=101
+Accept: {{contentType}}
+
+### Get Book by ID
+GET {{baseUrl}}/api/books/1
+Accept: {{contentType}}
+
+### Get Book by ID - Not Found (ERROR TEST - Should return 404)
+GET {{baseUrl}}/api/books/999
+Accept: {{contentType}}
+
+### Get Book by ID - Invalid ID (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/0
+Accept: {{contentType}}
+
+### Get Books by Category
+GET {{baseUrl}}/api/books/categories/1
+Accept: {{contentType}}
+
+### Get Books by Category - Invalid ID (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/categories/0
+Accept: {{contentType}}
+
+### Get Books by Category - No Results
+GET {{baseUrl}}/api/books/categories/999
+Accept: {{contentType}}
+
+### Create Book - With Timestamp Name (SAFE)
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "Book_{{$timestamp}}",
+  "author": "Author {{$timestamp}}",
+  "description": "Auto-generated test book created",
+  "value": 9.99,
+  "publishDate": "2024-01-15",
+  "categoryId": 1
+}
+
+### Create Book - Missing Required Fields (ERROR TEST - Should return 400)
+POST {{baseUrl}}/api/books
+Content-Type: {{contentType}}
+
+{
+  "name": "",
+  "author": "Test Author",
+  "value": 10.00,
+  "categoryId": 1
+}
+
+### Update Book (set ID manually after creating one)
+@updateBookId = 1
+PUT {{baseUrl}}/api/books/{{updateBookId}}
+Content-Type: {{contentType}}
+
+{
+  "id": {{updateBookId}},
+  "name": "Updated_{{$timestamp}}",
+  "author": "Test Author",
+  "description": "Updated description",
+  "value": 29.99,
+  "publishDate": "2024-01-15",
+  "categoryId": 1
+}
+
+### Update Book - ID Mismatch (ERROR TEST - Should return 400)
+PUT {{baseUrl}}/api/books/1
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "name": "Mismatched ID",
+  "author": "Test",
+  "description": "Test",
+  "value": 19.99,
+  "publishDate": "2024-01-01",
+  "categoryId": 1
+}
+
+### Update Book - Not Found (ERROR TEST - Should return 404)
+PUT {{baseUrl}}/api/books/999
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "name": "Non-existent Book",
+  "author": "Unknown",
+  "description": "This book does not exist",
+  "value": 19.99,
+  "publishDate": "2024-01-01",
+  "categoryId": 1
+}
+
+### Update Book - Empty Name (ERROR TEST - Should return 400)
+PUT {{baseUrl}}/api/books/1
+Content-Type: {{contentType}}
+
+{
+  "id": 1,
+  "name": "",
+  "author": "Test Author",
+  "description": "Test",
+  "value": 10.00,
+  "publishDate": "2024-01-01",
+  "categoryId": 1
+}
+
+### Delete Book (set ID manually)
+@deleteBookId = 1
+DELETE {{baseUrl}}/api/books/{{deleteBookId}}
+
+### Delete Book - Not Found (ERROR TEST - Should return 404)
+DELETE {{baseUrl}}/api/books/999
+
+### Delete Book - Invalid ID (ERROR TEST - Should return 400)
+DELETE {{baseUrl}}/api/books/0
+
+### Search Books by Name
+GET {{baseUrl}}/api/books/search?q=martian
+Accept: {{contentType}}
+
+### Search Books - Empty Search Term (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/search?q=
+Accept: {{contentType}}
+
+### Search Books - No Results
+GET {{baseUrl}}/api/books/search?q=XYZ999NOTFOUND
+Accept: {{contentType}}
+
+### Search Books with Category
+GET {{baseUrl}}/api/books/search-with-category?q=science
+Accept: {{contentType}}
+
+### Search Books with Category - Empty Search Term (ERROR TEST - Should return 400)
+GET {{baseUrl}}/api/books/search-with-category?q=
+Accept: {{contentType}}
+
+### Search Books with Category - No Results
+GET {{baseUrl}}/api/books/search-with-category?q=XYZ999NOTFOUND
+Accept: {{contentType}}

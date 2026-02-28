@@ -1,5 +1,4 @@
-﻿using BookStore.Infrastructure.Context;
-using Microsoft.OpenApi;
+﻿using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.Filters;
 using System.Reflection;
 
@@ -9,8 +8,6 @@ namespace BookStore.API.Configuration
     {
         public static IServiceCollection ResolveSwaggerConfig(this IServiceCollection services)
         {
-            services.AddScoped<BookStoreDbContext>();
-
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo()
@@ -30,8 +27,6 @@ namespace BookStore.API.Configuration
         {
             if (app.Environment.IsDevelopment())
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
                 app.UseDeveloperExceptionPage();
             }
 

@@ -1,10 +1,9 @@
-﻿namespace BookStore.Domain.Models
+namespace BookStore.Domain.Models
 {
     public class Category : Entity
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
-        /* EF Relations */
-        public IEnumerable<Book> Books { get; set; }
+        public ICollection<Book> Books { get; set; } = [];
     }
 }

@@ -16,7 +16,7 @@ namespace BookStore.API.Controllers.SwaggerExamples.Categories
                 Name = "Category name"
             };
 
-            return new OperationResult<CategoryResultDto>(payload);
+            return OperationResult<CategoryResultDto>.SuccessResult(payload);
         }
     }
 }

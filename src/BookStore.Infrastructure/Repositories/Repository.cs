@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using BookStore.Domain.Interfaces;
 using BookStore.Domain.Models;
 using BookStore.Infrastructure.Context;
@@ -18,61 +18,82 @@ namespace BookStore.Infrastructure.Repositories
             DbSet = db.Set<TEntity>();
         }
 
-        public virtual async Task Add(TEntity entity)
+        public virtual async Task Add(TEntity entity, CancellationToken ct = default)
         {
             DbSet.Add(entity);
-            await SaveChanges();
+            await SaveChanges(ct);
         }
 
-        public virtual async Task<List<TEntity>> GetAll()
+        public virtual async Task<IEnumerable<TEntity>> GetAll(CancellationToken ct = default)
         {
-            return await DbSet.ToListAsync();
+            return await DbSet.AsNoTracking().ToListAsync(ct);
         }
 
-        public virtual async Task<PagedResponse<TEntity>> GetAllWithPagination(int pageNumber, int pageSize)
+        public virtual async Task<PagedResponse<TEntity>> GetAllWithPagination(int pageNumber, int pageSize, CancellationToken ct = default)
         {
-            var totalRecords = await Db.Set<TEntity>().AsNoTracking().CountAsync();
+            var totalRecords = await Db.Set<TEntity>().AsNoTracking().CountAsync(ct);
 
-            var entities = await Db.Set<TEntity>().AsNoTracking()
+            var entities = await Db.Set<TEntity>()
+                .AsNoTracking()
+                .OrderBy(e => e.Id)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToListAsync(ct);
 
             var pagedResponse = new PagedResponse<TEntity>(entities, pageNumber, pageSize, totalRecords);
 
             return pagedResponse;
         }
 
-        public virtual async Task<TEntity> GetById(int id)
+        public virtual async Task<TEntity?> GetById(int id, CancellationToken ct = default)
         {
-            return await DbSet.FindAsync(id);
+            return await DbSet.FindAsync([id], ct);
         }
-        
-        public virtual async Task Update(TEntity entity)
+
+        public virtual async Task<TEntity?> GetByIdAsNoTracking(int id, CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, ct);
+        }
+
+        public virtual async Task Update(TEntity entity, CancellationToken ct = default)
         {
             DbSet.Update(entity);
-            await SaveChanges();
+            await SaveChanges(ct);
         }
 
-        public virtual async Task Remove(TEntity entity)
+        public virtual async Task Remove(TEntity entity, CancellationToken ct = default)
         {
             DbSet.Remove(entity);
-            await SaveChanges();
+            await SaveChanges(ct);
         }
 
-        public async Task<IEnumerable<TEntity>> Search(Expression<Func<TEntity, bool>> predicate)
+        public async Task<IEnumerable<TEntity>> Search(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
         {
-            return await DbSet.AsNoTracking().Where(predicate).ToListAsync();
+            return await DbSet.AsNoTracking().Where(predicate).ToListAsync(ct);
         }
 
-        public async Task<int> SaveChanges()
+        public virtual async Task<PagedResponse<TEntity>> SearchWithPagination(Expression<Func<TEntity, bool>> predicate, int pageNumber, int pageSize, CancellationToken ct = default)
         {
-            return await Db.SaveChangesAsync();
+            var query = DbSet.AsNoTracking().Where(predicate);
+            var totalRecords = await query.CountAsync(ct);
+
+            var entities = await query
+                .OrderBy(e => e.Id)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+
+            return new PagedResponse<TEntity>(entities, pageNumber, pageSize, totalRecords);
         }
 
-        public void Dispose()
+        public async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
         {
-            Db?.Dispose();
+            return await DbSet.AsNoTracking().AnyAsync(predicate, ct);
+        }
+
+        public async Task<int> SaveChanges(CancellationToken ct = default)
+        {
+            return await Db.SaveChangesAsync(ct);
         }
     }
 }

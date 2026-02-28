@@ -1,15 +1,16 @@
-﻿using BookStore.Domain.Models;
+using BookStore.Domain.Models;
 
 namespace BookStore.Domain.Interfaces
 {
-    public interface ICategoryService : IDisposable
+    public interface ICategoryService
     {
-        Task<IEnumerable<Category>> GetAll();
-        Task<PagedResponse<Category>> GetAllWithPagination(int pageNumber, int pageSize);
-        Task<Category> GetById(int id);
-        Task<IOperationResult<Category>> Add(Category category);
-        Task<IOperationResult<Category>> Update(Category category);
-        Task<bool> Remove(Category category);
-        Task<IEnumerable<Category>> Search(string categoryName);
+        Task<IOperationResult<IEnumerable<Category>>> GetAll(CancellationToken ct = default);
+        Task<IOperationResult<PagedResponse<Category>>> GetAllWithPagination(int pageNumber, int pageSize, CancellationToken ct = default);
+        Task<IOperationResult<Category>> GetById(int id, CancellationToken ct = default);
+        Task<IOperationResult<Category>> Add(Category category, CancellationToken ct = default);
+        Task<IOperationResult<Category>> Update(Category category, CancellationToken ct = default);
+        Task<IOperationResult<bool>> Remove(int id, CancellationToken ct = default);
+        Task<IOperationResult<IEnumerable<Category>>> Search(string categoryName, CancellationToken ct = default);
+        Task<IOperationResult<PagedResponse<Category>>> SearchWithPagination(string categoryName, int pageNumber, int pageSize, CancellationToken ct = default);
     }
 }
